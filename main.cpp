@@ -1,140 +1,8 @@
 #include <iostream>
-#include <fstream>
-#include <vector>
-#include <sstream>
-#include <iomanip>
 
-// #include "matrixcover.h"
+#include "SolutionState.h"
 
-enum Val
-{
-    ZERO = 0,
-    ONE = 1,
-    DC = 2
-};
 
-char valToChar(Val v)
-{
-    if (v == ONE)
-        return '1';
-    if (v == ZERO)
-        return '0';
-    return '-';
-}
-
-bool parse_literal(const std::string &token, int &var_index, Val &value)
-{
-    if (token.empty() || token[0] != 'x')
-    {
-        return false;
-    }
-
-    size_t pos = 1;
-
-    // move past the digits after x
-    while (pos < token.size() && std::isdigit(static_cast<unsigned char>(token[pos])))
-    {
-        pos++;
-    }
-
-    if (pos == 1)
-    {
-        return false; // no number after x
-    }
-
-    int var_num = std::stoi(token.substr(1, pos - 1));
-    var_index = var_num - 1;
-
-    if (pos == token.size())
-    {
-        value = ONE; // x3
-        return true;
-    }
-
-    if (pos + 1 == token.size() && token[pos] == '\'')
-    {
-        value = ZERO; // x3'
-        return true;
-    }
-
-    return false;
-}
-
-void printMatrix(std::vector<std::vector<Val>> &matrix, std::vector<std::string> &rownames, std::vector<std::string> &colnames) // pass using the by reference operator &. this means we don't make a deep copy of the matrix just to print it
-{
-    if (matrix.empty())
-    {
-        std::cout << "Matrix is empty\n";
-        return;
-    }
-
-    int num_vars = colnames.size();
-
-    int colwidth = num_vars < 9 ? 3 : 4;
-
-    // --- Print header ---
-    std::cout << colnames[1];
-
-    for (int i = 2; i < num_vars; i++)
-    {
-        std::cout << std::setw(colwidth) << colnames[i];
-    }
-    std::cout << "\n";
-
-    // --- Print separator ---
-
-    for (int i = 0; i < num_vars + 1; i++)
-    {
-        std::cout << "--";
-    }
-    std::cout << "\n";
-
-    // --- Print rows ---
-    for (size_t i = 0; i < matrix.size(); i++)
-    {
-
-        // print row values
-        for (Val v : matrix[i])
-        {
-            std::cout << valToChar(v) << "  ";
-        }
-
-        // print row name
-        std::cout << "\t" << rownames[i];
-        std::cout << "\n";
-    }
-}
-
-int find_essential_row_number(std::vector<std::vector<Val>> &matrix, Val &essentialVal_value, int &colnumber)
-{
-
-    for (int i = 0; i < matrix.size(); i++)
-    {
-        std::vector<Val> row = matrix[i];
-        int howManyAssigned = 0;
-        Val assignedVal;
-
-        for (int j = 0; j < row.size(); j++)
-        {
-            Val currentVal = row[j];
-            // for (Val currentVal : row)
-            if (currentVal != DC)
-            {
-                assignedVal = currentVal;
-                howManyAssigned++;
-                colnumber = j;
-            }
-        }
-
-        if (howManyAssigned == 1)
-        {
-            essentialVal_value = assignedVal;
-            return i;
-        }
-    }
-
-    return -1;
-}
 
 /*
 When you find an essential row, what you really found is a forced variable assignment, not merely “a row to delete.”
@@ -173,53 +41,53 @@ So yes, you absolutely do need to check other rows with the same variable. That 
 The essential row is just the clue that tells you the assignment is forced. The action applies to the whole matrix.
 
 One subtle point: if another row has the same variable with the same polarity, it gets removed as satisfied. If it has the opposite polarity, it is not removed automatically — it just loses that literal and may become smaller, maybe even essential itself.*/
-std::vector<Val> remove_essential_row(std::vector<std::vector<Val>> &matrix,
-                          std::vector<std::string> &rownames,
-                          std::vector<std::string> &colnames,
-                          int rownumber, int colnumber,
-                          std::vector<Val> solution)
-{
-    auto row = matrix[rownumber];
-    Val curval = row[colnumber];
-    solution[colnumber] = curval;
-    // solution[colnumber] = matrix[rownumber][colnumber];
+// std::vector<Val> remove_essential_row(std::vector<std::vector<Val>> &matrix,
+//                           std::vector<std::string> &rownames,
+//                           std::vector<std::string> &colnames,
+//                           int rownumber, int colnumber,
+//                           std::vector<Val> solution)
+// {
+//     auto row = matrix[rownumber];
+//     Val curval = row[colnumber];
+//     solution[colnumber] = curval;
+//     // solution[colnumber] = matrix[rownumber][colnumber];
 
-    return solution; // TODO
-}
+//     return solution; // TODO
+// }
 
-void reduce(std::vector<std::vector<Val>> &matrix,
-            std::vector<std::string> &rownames,
-            std::vector<std::string> &colnames,
-            std::vector<Val> solution)
-{
-    std::vector<std::vector<Val>> matrix_orig;
+// void reduce(std::vector<std::vector<Val>> &matrix,
+//             std::vector<std::string> &rownames,
+//             std::vector<std::string> &colnames,
+//             std::vector<Val> solution)
+// {
+//     std::vector<std::vector<Val>> matrix_orig;
 
-    // auto rownames_copy = rownames;
-    // auto colnames_copy = colnames;
+//     // auto rownames_copy = rownames;
+//     // auto colnames_copy = colnames;
 
-    do
-    {
-        matrix_orig = matrix; // std::vector does a deep copy when you assign it like this
+//     do
+//     {
+//         matrix_orig = matrix; // std::vector does a deep copy when you assign it like this
 
-        // select unate variables first?
+//         // select unate variables first?
 
-        // find essentials
-        Val essentialVal_value;
-        int colnumber = -1;
-        int rownumber = find_essential_row_number(matrix, essentialVal_value, colnumber);
-        if (rownumber >= 0 && colnumber >= 0)
-        {
-            remove_essential_row(matrix, rownames, colnames, rownumber, colnumber, solution);
-        }
+//         // find essentials
+//         Val essentialVal_value;
+//         int colnumber = -1;
+//         int rownumber = find_essential_row_number(matrix, essentialVal_value, colnumber);
+//         if (rownumber >= 0 && colnumber >= 0)
+//         {
+//             remove_essential_row(matrix, rownames, colnames, rownumber, colnumber, solution);
+//         }
 
-        // delete dominating rows
+//         // delete dominating rows
 
-        // delete dominated columns
+//         // delete dominated columns
 
-    } while (
-        !matrix.empty() &&
-        matrix != matrix_orig);
-}
+//     } while (
+//         !matrix.empty() &&
+//         matrix != matrix_orig);
+// }
 
 int main(int argc, char **argv)
 {
@@ -234,100 +102,17 @@ int main(int argc, char **argv)
 
     std::string filename = argv[1];
 
-    int how_many_x_vars = 0;
-    std::ifstream infile(filename);
-    std::string line;
+    SolutionState currentCover(filename);
 
-    while (std::getline(infile, line))
-    {
-        std::stringstream ss(line);
+    currentCover.printMatrix();
+    
 
-        std::string token;
 
-        while (ss >> token)
-        {
-            int var_number = std::stoi(token.substr(1));
-            if (var_number > how_many_x_vars)
-            {
-                how_many_x_vars = var_number;
-            }
-        }
-    }
+    // printMatrix(matrix, rownames, colnames);
 
-    // now we know how many columns to have in the matrix
-    std::cout << "we have " << how_many_x_vars << " x variables\n"
-              << std::endl;
+    // std::vector<Val> solution(how_many_x_vars, DC);
 
-    infile.clear(); // clear the EOF flag
-    infile.seekg(0);
-
-    std::vector<std::string> rownames;
-    std::vector<std::string> colnames;
-
-    std::vector<std::vector<Val>> matrix;
-
-    while (std::getline(infile, line))
-    {
-        if (line.empty())
-        {
-            continue;
-        }
-
-        // std::cout << line << std::endl;
-
-        rownames.push_back(line);
-
-        std::vector<Val> row(how_many_x_vars, DC);
-
-        std::stringstream ss(line);
-        std::string token;
-
-        int line_num = 0;
-        while (ss >> token) // keep extracting words from ss into token until it fails (no more tokens). they are white space separated tokens
-        {
-            line_num++;
-
-            int var_index;
-            Val value;
-
-            if (!parse_literal(token, var_index, value))
-            {
-                std::cerr << "Bad token \"" << token
-                          << "\" on line " << line_num << "\n";
-                return 1;
-            }
-
-            if (var_index < 0 || var_index >= how_many_x_vars)
-            {
-                std::cerr << "Variable out of range on line " << line_num << "\n";
-                return 1;
-            }
-
-            row[var_index] = value;
-        }
-
-        matrix.push_back(row);
-    }
-
-    infile.close();
-
-    // column number should match the x variable number, and we are starting count from x1
-    colnames.push_back(" ");
-
-    for (int i = 0; i < how_many_x_vars; i++)
-    {
-        std::string xname = "x";
-
-        xname += std::to_string(i + 1);
-
-        colnames.push_back(xname);
-    }
-
-    printMatrix(matrix, rownames, colnames);
-
-    std::vector<Val> solution(how_many_x_vars, DC);
-
-    reduce(matrix, rownames, colnames, solution);
+    // reduce(matrix, rownames, colnames, solution);
 
     return 0;
 }
