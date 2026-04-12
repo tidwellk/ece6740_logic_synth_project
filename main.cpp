@@ -103,10 +103,14 @@ int main(int argc, char **argv)
     std::string filename = argv[1];
 
     SolutionState currentCover(filename);
-
+    
     currentCover.printMatrix();
     
+    std::cout << "matrix: reduce()" << std::endl;
 
+    currentCover.reduce();
+
+    currentCover.printMatrix();
 
     // printMatrix(matrix, rownames, colnames);
 

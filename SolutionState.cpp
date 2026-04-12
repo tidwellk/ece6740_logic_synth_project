@@ -30,7 +30,7 @@ SolutionState::~SolutionState()
 }
 
 /// @brief rule of 5 stuff auto generated from gpt
-/// @param other 
+/// @param other
 SolutionState::SolutionState(const SolutionState &other)
 	: matrix(other.matrix)
 {
@@ -173,6 +173,11 @@ bool SolutionState::readInputFile_isOK(std::string filename)
 		matrix.push_back(row);
 	}
 
+	for (uint i = 0; i < rownames.size(); i++)
+	{
+		current_row_to_rownames_idx.push_back(i);
+	}
+
 	infile.close();
 
 	return true;
@@ -184,6 +189,7 @@ void SolutionState::populate_colnames_array()
 	for (int i = 0; i < how_many_x_vars; i++)
 	{
 		colnames.push_back("x" + std::to_string(i + 1));
+		current_column_to_colnames_idx.push_back(i);
 	}
 }
 
@@ -199,21 +205,20 @@ void SolutionState::printMatrix() // pass using the by reference operator &. thi
 	int colwidth = how_many_x_vars < 9 ? 3 : 4;
 
 	// --- Print header ---
-	std::cout << colnames[1];
+	std::cout << colnames[0];
 
 	for (int i = 1; i < how_many_x_vars; i++)
 	{
 		std::cout << std::setw(colwidth) << colnames[i];
 	}
-	std::cout << "\n";
+	std::cout << std::endl;
 
 	// --- Print separator ---
-
-	for (int i = 0; i < how_many_x_vars + 1; i++)
+	for (int i = 0; i < how_many_x_vars + 2; i++)
 	{
 		std::cout << "--";
 	}
-	std::cout << "\n";
+	std::cout << std::endl;
 
 	// --- Print rows ---
 	for (size_t i = 0; i < matrix.size(); i++)
@@ -227,37 +232,51 @@ void SolutionState::printMatrix() // pass using the by reference operator &. thi
 
 		// print row name
 		std::cout << "\t" << rownames[i];
-		std::cout << "\n";
+		std::cout << std::endl;
 	}
 }
 
-int find_essential_row_number(std::vector<std::vector<Val>> &matrix, Val &essentialVal_value, int &colnumber)
+/// @brief this function mutates the state in place. it will apply these three things:
+///		finding essential rows
+///		delete dominating rows
+///		delete dominated columns
+void SolutionState::reduce()
 {
 
-	for (int i = 0; i < matrix.size(); i++)
+	while (find_essential_row() == true)
+	{
+	}
+}
+
+bool SolutionState::find_essential_row()
+{
+	for (uint i = 0; i < matrix.size(); i++)
 	{
 		std::vector<Val> row = matrix[i];
-		int howManyAssigned = 0;
-		Val assignedVal;
 
-		for (int j = 0; j < row.size(); j++)
+		int howManyAssigned = 0;
+		int colNumber = -1;
+		Val assignedVal = DC;
+		for (uint j = 0; j < row.size(); j++)
 		{
 			Val currentVal = row[j];
-			// for (Val currentVal : row)
+
 			if (currentVal != DC)
 			{
 				assignedVal = currentVal;
 				howManyAssigned++;
-				colnumber = j;
+				colNumber = j;
 			}
 		}
 
 		if (howManyAssigned == 1)
 		{
-			essentialVal_value = assignedVal;
-			return i;
+			int assigned_var_column = current_column_to_colnames_idx[colNumber];
+
+			solution.push_back(Assignment(assigned_var_column, assignedVal));
+
+			return true;
 		}
 	}
-
-	return -1;
+	return false;
 }

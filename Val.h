@@ -10,9 +10,4 @@ enum Val
     DC = 2
 };
 
-struct Assignment {
-    std::string name;
-    Val value;
-};
-
 #endif
