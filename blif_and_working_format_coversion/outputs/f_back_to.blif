@@ -1,0 +1,15 @@
+.model f_back_to
+.inputs a b c d e
+.outputs f
+
+.names a b factor1_or_1
+1- 1
+-1 1
+
+.names d not_d
+0 1
+
+.names factor1_or_1 not_d c f
+111 1
+
+.end

@@ -1,0 +1,11 @@
+# Benchmark "f_unsimplified" written by ABC on Sat Apr  4 15:49:31 2026
+.model f_unsimplified
+.inputs a b c d e
+.outputs f
+.names new_n9 new_n10 f
+01 1
+.names a b new_n9
+00 1
+.names d c new_n10
+01 1
+.end

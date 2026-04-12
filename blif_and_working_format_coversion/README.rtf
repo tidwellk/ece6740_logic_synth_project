@@ -1,0 +1,36 @@
+Our working format is:
+    - a factored product
+    - where each factor exists on its own line
+    - and negated expressions are not considered as factored.
+
+The "blif_to_working_format.py" script can convert a blif file into our working format, but only if it's already simplified.
+
+So I'm thinking the work flow might be like:
+
+1. Write a blif file in the "raw_blif_files" directory
+
+2. Reduce it with abc:
+    The "abc_simplify.sh" runs abc to reduce a blif file.
+        To use:
+            1. Change the path in it to where your abc executable is located
+            2. chmod +x scripts/abc_simplify.sh (if needed)
+            3. ./scripts/abc_simplify.sh raw_blif_files/file.blif output/result.blif
+
+3. Feed the simplified blif to the "blif_to_working_format.py" script
+    python3 scripts/blif_to_working_format.py path/to/simplified.blif path/to/working/format.txt
+
+4. Feed the working format file to C++ program that does the covering problem
+    TODO:
+
+5. Feed the C++ result file to a working_format_to_blif script
+    python3 scripts/working_format_to_blif.py outputs/f_working.txt outputs/f_back_to.blif
+
+6. Verify equivalence in abc.
+    1. chmod +x scripts/abc_cec.sh (if needed)
+    2. ./scripts/abc_cec path/to/unsimplified.blif path/to/result.blif
+    3. Note that if there was a floating/redundant input like with this f_unsimplified.blif example,
+        the eliminated input makes the script say the two are not equivalent.
+        But if you make the input ports the same then they will be again.
+    
+
+The scripts for converting a blif to SoP and factored expression can probably be thrown away. I don't think we'll need them.

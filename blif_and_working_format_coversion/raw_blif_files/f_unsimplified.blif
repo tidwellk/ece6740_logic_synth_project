@@ -1,0 +1,43 @@
+.model f_unsimplified
+.inputs a b c d e
+.outputs f
+
+# notd = d'
+.names d notd
+0 1
+
+# a_and_notb = ab'
+.names a b a_and_notb
+10 1
+
+# nota_and_b = a'b
+.names a b nota_and_b
+01 1
+
+# a_and_b = ab
+.names a b a_and_b
+11 1
+
+# xor_ab = ab' + a'b
+.names a_and_notb nota_and_b xor_ab
+1- 1
+-1 1
+
+# c_and_notd = cd'
+.names c notd c_and_notd
+11 1
+
+# term1 = (a xor b)cd'
+.names xor_ab c_and_notd term1
+11 1
+
+# term2 = abcd'
+.names a_and_b c_and_notd term2
+11 1
+
+# f = term1 + term2
+.names term1 term2 f
+1- 1
+-1 1
+
+.end
