@@ -105,6 +105,8 @@ int main(int argc, char **argv)
     SolutionState currentCover(filename);
     
     currentCover.printMatrix();
+
+    currentCover.printSolution();
     
     std::cout << "matrix: reduce()" << std::endl;
 

@@ -19,13 +19,14 @@ private:
     std::vector<std::string> rownames;
     std::vector<std::string> colnames;
     std::vector<int> current_column_to_colnames_idx;
-    std::vector<int> current_row_to_rownames_idx;
+    // std::vector<int> current_row_to_rownames_idx;
 
     int how_many_x_vars = 0;
 
-    std::vector<Assignment> solution;
+    // std::vector<Assignment> solutionObj;
+    std::vector<Val> solution;
 
-
+    void populate_solutions_array();
 
     char valToChar(Val v);
 
@@ -36,6 +37,10 @@ private:
     void populate_colnames_array();
 
     bool find_essential_row();
+
+    void remove_rows_with_same_val(int column_to_check, Val value);
+
+    void remove_column(int column_number);
 
 public:
     /// @brief default constructor
@@ -52,6 +57,8 @@ public:
     
     /// @brief prints the current matrix cover
     void printMatrix();
+
+    void printSolution();
 
     /// @brief reduces the matrix in place without making a copy of the object
     void reduce();

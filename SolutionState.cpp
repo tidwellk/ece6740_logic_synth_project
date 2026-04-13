@@ -21,6 +21,8 @@ SolutionState::SolutionState(std::string filename)
 			  << std::endl;
 
 	populate_colnames_array();
+
+	populate_solutions_array();
 }
 
 /// @brief destructor
@@ -57,6 +59,14 @@ SolutionState &SolutionState::operator=(SolutionState &&other) noexcept
 		matrix = std::move(other.matrix);
 	std::cout << "SolutionState: move assignment" << std::endl;
 	return *this;
+}
+
+void SolutionState::populate_solutions_array()
+{
+	for (int i = 0; i < how_many_x_vars; i++)
+	{
+		solution.push_back(UNASSIGNED);
+	}
 }
 
 char SolutionState::valToChar(Val v)
@@ -175,7 +185,7 @@ bool SolutionState::readInputFile_isOK(std::string filename)
 
 	for (uint i = 0; i < rownames.size(); i++)
 	{
-		current_row_to_rownames_idx.push_back(i);
+		// current_row_to_rownames_idx.push_back(i);
 	}
 
 	infile.close();
@@ -202,14 +212,16 @@ void SolutionState::printMatrix() // pass using the by reference operator &. thi
 		return;
 	}
 
+	how_many_x_vars = (int) current_column_to_colnames_idx.size();
+
 	int colwidth = how_many_x_vars < 9 ? 3 : 4;
 
 	// --- Print header ---
-	std::cout << colnames[0];
+	std::cout << colnames[current_column_to_colnames_idx[0]];
 
 	for (int i = 1; i < how_many_x_vars; i++)
 	{
-		std::cout << std::setw(colwidth) << colnames[i];
+		std::cout << std::setw(colwidth) << colnames[current_column_to_colnames_idx[i]];
 	}
 	std::cout << std::endl;
 
@@ -236,6 +248,16 @@ void SolutionState::printMatrix() // pass using the by reference operator &. thi
 	}
 }
 
+void SolutionState::printSolution()
+{
+	std::cout << "Solution\n"
+			  << "------------" << std::endl;
+	for (uint i = 0; i < solution.size(); i++)
+	{
+		std::cout << colnames[i] << "\t" << valToChar(solution[i]) << std::endl;
+	}
+}
+
 /// @brief this function mutates the state in place. it will apply these three things:
 ///		finding essential rows
 ///		delete dominating rows
@@ -245,6 +267,9 @@ void SolutionState::reduce()
 
 	while (find_essential_row() == true)
 	{
+		std::cout << "found essential row" << std::endl;
+		printSolution();
+		printMatrix();
 	}
 }
 
@@ -271,12 +296,65 @@ bool SolutionState::find_essential_row()
 
 		if (howManyAssigned == 1)
 		{
-			int assigned_var_column = current_column_to_colnames_idx[colNumber];
+			int actual_var_column = current_column_to_colnames_idx[colNumber];
 
-			solution.push_back(Assignment(assigned_var_column, assignedVal));
+			// check for duplicates first
+			// solution.push_back(Assignment(assigned_var_column, assignedVal));
+			/*
+			A row ai of A is essential when there exists exactly one j such that aij is
+			not equal to ’-’.
+			This cooresponds to clause consisting of a single literal.
+			If the literal is xj (i.e., aij = 1), the variable is essential.
+			If the literal is xj' (i.e., aij = 0), the variable is unacceptable.
+			The matrix A is reduced with respect to the essential literal.
+			This variable is set to value of literal, column is removed, and any row
+			where variable has same value is removed.
+			*/
+			solution[actual_var_column] = assignedVal;
+
+			remove_rows_with_same_val(colNumber, assignedVal);
+
+			remove_column(colNumber);
 
 			return true;
 		}
 	}
 	return false;
+}
+
+/// @brief this is called when find_essential_row has found one.
+///		   it needs to remove any row that has the same x value assigned
+///		   to it because it has been covered
+/// @param column_to_check
+/// @param value
+void SolutionState::remove_rows_with_same_val(int column_to_check, Val value)
+{
+	for (int rownum = (int) matrix.size() - 1; rownum >= 0; rownum--)
+	{
+		Val testval = matrix[rownum][column_to_check];
+		if (testval == value)
+		{
+			// remove the row from rownames
+			rownames.erase(rownames.begin() + rownum);
+
+			// remove the row from matrix
+			matrix.erase(matrix.begin() + rownum);
+
+		}
+	}
+}
+
+/// @brief this is called when a variable has been assigned, we need to remove the column from
+///        each row vector
+/// @param column_number
+void SolutionState::remove_column(int column_number)
+{
+	for (auto &row : matrix)
+	{
+		row.erase(row.begin() + column_number);
+	}
+
+	// we need to update the current_column translation array
+	current_column_to_colnames_idx.erase(
+		current_column_to_colnames_idx.begin() + column_number);
 }
