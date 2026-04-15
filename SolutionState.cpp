@@ -203,6 +203,16 @@ void SolutionState::populate_colnames_array()
 	}
 }
 
+void SolutionState::remove_essential_rows()
+{
+	while (find_essential_row() == true)
+	{
+		std::cout << "found essential row" << std::endl;
+		printSolution();
+		printMatrix();
+	}
+}
+
 /// @brief print the matrix cover
 void SolutionState::printMatrix() // pass using the by reference operator &. this means we don't make a deep copy of the matrix just to print it
 {
@@ -212,12 +222,12 @@ void SolutionState::printMatrix() // pass using the by reference operator &. thi
 		return;
 	}
 
-	how_many_x_vars = (int) current_column_to_colnames_idx.size();
+	how_many_x_vars = (int)current_column_to_colnames_idx.size();
 
 	int colwidth = how_many_x_vars < 9 ? 3 : 4;
 
 	// --- Print header ---
-	std::cout << colnames[current_column_to_colnames_idx[0]];
+	std::cout << "\n" << colnames[current_column_to_colnames_idx[0]];
 
 	for (int i = 1; i < how_many_x_vars; i++)
 	{
@@ -264,12 +274,146 @@ void SolutionState::printSolution()
 ///		delete dominated columns
 void SolutionState::reduce()
 {
+	remove_essential_rows();
 
-	while (find_essential_row() == true)
+	remove_dominated_rows();
+	printMatrix();
+	remove_dominated_columns();
+}
+
+/// @brief pairwise comparison of rows
+/// i think i wrote this backwards though, the one that gets removed is the dominator i guess.
+/// it matches what is in the UCP-BCP.pdf slides and behaves accordingly even though i named
+/// the boolean backwards
+void SolutionState::remove_dominated_rows()
+{
+	// this makes a set which iterates in descending order
+	std::set<int, std::greater<int>> rows_to_remove;
+
+	// need to compare row by row
+	// outer loop takes one row and inner loop changes which one the outer one is being compared to
+	for (uint outer = 0; outer < matrix.size(); outer++)
 	{
-		std::cout << "found essential row" << std::endl;
-		printSolution();
-		printMatrix();
+		std::vector<Val> row_i = matrix[outer];
+
+		for (uint inner = 0; inner < matrix.size(); inner++)
+		{
+			if (outer == inner)
+			{
+				continue;
+			}
+
+			std::vector<Val> row_j = matrix[inner];
+
+			bool i_dominates_j = true;
+
+			// ok now we have two rows to compare, row_i and row_j
+			// need to compare them elementwise
+			for (uint elementwise = 0; elementwise < row_i.size(); elementwise++)
+			{
+				// we want to check if i dominates j, if so we remove j
+				Val row_i_el = row_i[elementwise];
+
+				// if the element in i is dont care, then we skip checking j
+				if (row_i_el == DC)
+				{
+					continue;
+				}
+
+				Val row_j_el = row_j[elementwise];
+
+				if (row_i_el != row_j_el)
+				{
+					i_dominates_j = false;
+					break;
+				}
+			}
+
+			// elementwise check is done.
+			if (i_dominates_j)
+			{
+				rows_to_remove.emplace(inner);
+			}
+		}
+	}
+
+	// remove each row, starting from the bottom and working up. the set is iterated in reverse order
+	for (const int pending_row_del : rows_to_remove)
+	{
+		remove_row_number(pending_row_del);
+	}
+}
+
+/// @brief pairwise checks of every column
+void SolutionState::remove_dominated_columns()
+{
+	std::set<int, std::greater<int>> cols_to_remove;
+
+	uint rowCount = matrix.size();
+	uint colCount = matrix[0].size();
+
+	for (uint colA = 0; colA < colCount; colA++)
+	{
+		for (uint colB = 0; colB < colCount; colB++)
+		{
+			if (colA == colB)
+			{
+				continue;
+			}
+
+			bool a_dominates_b = true;
+
+			// need to check every row from colA and colB
+			/*
+			the bad combinations are:
+
+			a=−, b=1
+			a=0, b=1
+			a=0, b=−
+
+			If any row has one of those, then a does not dominate b
+			*/
+			for (uint rowIdx = 0; rowIdx < rowCount; rowIdx++)
+			{
+				Val row_a_el = matrix[rowIdx][colA];
+				Val row_b_el = matrix[rowIdx][colB];
+
+				if (row_a_el == DC &&
+					row_b_el == ONE)
+				{
+					a_dominates_b = false;
+					break;
+				}
+
+				if (row_a_el == ZERO &&
+					row_b_el == ONE)
+				{
+					a_dominates_b = false;
+					break;
+				}
+
+				if (row_a_el == ZERO &&
+					row_b_el == DC)
+				{
+					a_dominates_b = false;
+					break;
+				}
+			}
+
+			if (a_dominates_b)
+			{
+				cols_to_remove.emplace(colB);
+
+				// TODO check weights
+			}
+		}
+	}
+
+	// now we have a set of columns to remove
+	// each column we remove gets assigned that variable to 0
+	for (int column_to_del : cols_to_remove)
+	{
+		assign_a_variable(column_to_del, ZERO);
 	}
 }
 
@@ -296,25 +440,7 @@ bool SolutionState::find_essential_row()
 
 		if (howManyAssigned == 1)
 		{
-			int actual_var_column = current_column_to_colnames_idx[colNumber];
-
-			// check for duplicates first
-			// solution.push_back(Assignment(assigned_var_column, assignedVal));
-			/*
-			A row ai of A is essential when there exists exactly one j such that aij is
-			not equal to ’-’.
-			This cooresponds to clause consisting of a single literal.
-			If the literal is xj (i.e., aij = 1), the variable is essential.
-			If the literal is xj' (i.e., aij = 0), the variable is unacceptable.
-			The matrix A is reduced with respect to the essential literal.
-			This variable is set to value of literal, column is removed, and any row
-			where variable has same value is removed.
-			*/
-			solution[actual_var_column] = assignedVal;
-
-			remove_rows_with_same_val(colNumber, assignedVal);
-
-			remove_column(colNumber);
+			assign_a_variable(colNumber, assignedVal);
 
 			return true;
 		}
@@ -329,19 +455,23 @@ bool SolutionState::find_essential_row()
 /// @param value
 void SolutionState::remove_rows_with_same_val(int column_to_check, Val value)
 {
-	for (int rownum = (int) matrix.size() - 1; rownum >= 0; rownum--)
+	for (int rownum = (int)matrix.size() - 1; rownum >= 0; rownum--)
 	{
 		Val testval = matrix[rownum][column_to_check];
 		if (testval == value)
 		{
-			// remove the row from rownames
-			rownames.erase(rownames.begin() + rownum);
-
-			// remove the row from matrix
-			matrix.erase(matrix.begin() + rownum);
-
+			remove_row_number(rownum);
 		}
 	}
+}
+
+void SolutionState::remove_row_number(int rownum)
+{
+	// remove the row from rownames
+	rownames.erase(rownames.begin() + rownum);
+
+	// remove the row from matrix
+	matrix.erase(matrix.begin() + rownum);
 }
 
 /// @brief this is called when a variable has been assigned, we need to remove the column from
@@ -357,4 +487,41 @@ void SolutionState::remove_column(int column_number)
 	// we need to update the current_column translation array
 	current_column_to_colnames_idx.erase(
 		current_column_to_colnames_idx.begin() + column_number);
+}
+
+bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assign)
+{
+	int actual_var_column = current_column_to_colnames_idx[current_column_number];
+
+	// check for duplicates first
+	// solution.push_back(Assignment(assigned_var_column, assignedVal));
+	/*
+	A row ai of A is essential when there exists exactly one j such that aij is
+	not equal to ’-’.
+	This cooresponds to clause consisting of a single literal.
+	If the literal is xj (i.e., aij = 1), the variable is essential.
+	If the literal is xj' (i.e., aij = 0), the variable is unacceptable.
+	The matrix A is reduced with respect to the essential literal.
+	This variable is set to value of literal, column is removed, and any row
+	where variable has same value is removed.
+	*/
+	if (solution[actual_var_column] == UNASSIGNED ||
+		solution[actual_var_column] == DC ||
+		solution[actual_var_column] == val_to_assign)
+	{
+		solution[actual_var_column] = val_to_assign;
+	}
+	else
+	{
+		std::cout << "contradiction in solution" << std::endl;
+		exit(1);
+	}
+
+	remove_rows_with_same_val(current_column_number, val_to_assign);
+
+	remove_column(current_column_number);
+
+	printMatrix();
+
+	return true;
 }

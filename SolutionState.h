@@ -2,10 +2,13 @@
 #define SOLUTIONSTATE_H
 
 #include <vector>
+#include <set>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+
+#include <algorithm>
 
 #include "Val.h"
 #include "Assignment.h"
@@ -36,11 +39,18 @@ private:
 
     void populate_colnames_array();
 
+    void remove_essential_rows();
     bool find_essential_row();
+    
+    void remove_dominated_rows();
+    void remove_dominated_columns();
 
     void remove_rows_with_same_val(int column_to_check, Val value);
-
+    void remove_row_number(int rownum);
     void remove_column(int column_number);
+
+
+    bool assign_a_variable(int current_column_number, Val val_to_assign);
 
 public:
     /// @brief default constructor
