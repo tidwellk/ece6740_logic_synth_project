@@ -2,8 +2,6 @@
 
 #include "SolutionState.h"
 
-
-
 /*
 When you find an essential row, what you really found is a forced variable assignment, not merely “a row to delete.”
 
@@ -41,53 +39,13 @@ So yes, you absolutely do need to check other rows with the same variable. That 
 The essential row is just the clue that tells you the assignment is forced. The action applies to the whole matrix.
 
 One subtle point: if another row has the same variable with the same polarity, it gets removed as satisfied. If it has the opposite polarity, it is not removed automatically — it just loses that literal and may become smaller, maybe even essential itself.*/
-// std::vector<Val> remove_essential_row(std::vector<std::vector<Val>> &matrix,
-//                           std::vector<std::string> &rownames,
-//                           std::vector<std::string> &colnames,
-//                           int rownumber, int colnumber,
-//                           std::vector<Val> solution)
-// {
-//     auto row = matrix[rownumber];
-//     Val curval = row[colnumber];
-//     solution[colnumber] = curval;
-//     // solution[colnumber] = matrix[rownumber][colnumber];
 
-//     return solution; // TODO
-// }
+std::vector<Val> bcp(SolutionState a)
+{
+    std::vector<Val> best;
 
-// void reduce(std::vector<std::vector<Val>> &matrix,
-//             std::vector<std::string> &rownames,
-//             std::vector<std::string> &colnames,
-//             std::vector<Val> solution)
-// {
-//     std::vector<std::vector<Val>> matrix_orig;
-
-//     // auto rownames_copy = rownames;
-//     // auto colnames_copy = colnames;
-
-//     do
-//     {
-//         matrix_orig = matrix; // std::vector does a deep copy when you assign it like this
-
-//         // select unate variables first?
-
-//         // find essentials
-//         Val essentialVal_value;
-//         int colnumber = -1;
-//         int rownumber = find_essential_row_number(matrix, essentialVal_value, colnumber);
-//         if (rownumber >= 0 && colnumber >= 0)
-//         {
-//             remove_essential_row(matrix, rownames, colnames, rownumber, colnumber, solution);
-//         }
-
-//         // delete dominating rows
-
-//         // delete dominated columns
-
-//     } while (
-//         !matrix.empty() &&
-//         matrix != matrix_orig);
-// }
+    return best;
+}
 
 int main(int argc, char **argv)
 {
@@ -103,22 +61,27 @@ int main(int argc, char **argv)
     std::string filename = argv[1];
 
     SolutionState currentCover(filename);
-    
+
     currentCover.printMatrix();
 
     currentCover.printSolution();
-    
+
     std::cout << "matrix: reduce()" << std::endl;
 
     currentCover.reduce();
 
     currentCover.printMatrix();
+    currentCover.printSolution();
 
-    // printMatrix(matrix, rownames, colnames);
+    // SolutionState test_mis("h.txt");
 
-    // std::vector<Val> solution(how_many_x_vars, DC);
+    // test_mis.printMatrix();
 
-    // reduce(matrix, rownames, colnames, solution);
+    // test_mis.reduce();
+
+    // test_mis.printMatrix();
+
+    // std::vector<Val> bestcover = bcp(currentCover);
 
     return 0;
 }

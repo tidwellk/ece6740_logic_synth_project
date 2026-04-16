@@ -41,14 +41,13 @@ private:
 
     void remove_essential_rows();
     bool find_essential_row();
-    
+
     void remove_dominated_rows();
     void remove_dominated_columns();
 
     void remove_rows_with_same_val(int column_to_check, Val value);
     void remove_row_number(int rownum);
     void remove_column(int column_number);
-
 
     bool assign_a_variable(int current_column_number, Val val_to_assign);
 
@@ -64,11 +63,18 @@ public:
     SolutionState(SolutionState &&other) noexcept;
     SolutionState &operator=(const SolutionState &other);
     SolutionState &operator=(SolutionState &&other) noexcept;
-    
+
+    /// override == operator
+    bool operator==(const SolutionState &other) const;
+
+    bool operator!=(const SolutionState &other) const;
+
     /// @brief prints the current matrix cover
     void printMatrix();
 
     void printSolution();
+
+    std::vector<std::vector<Val>> getMatrix();
 
     /// @brief reduces the matrix in place without making a copy of the object
     void reduce();

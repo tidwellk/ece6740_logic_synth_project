@@ -28,19 +28,29 @@ SolutionState::SolutionState(std::string filename)
 /// @brief destructor
 SolutionState::~SolutionState()
 {
-	std::cout << "SolutionState: destructor" << std::endl;
+	//std::cout << "SolutionState: destructor" << std::endl;
 }
 
 /// @brief rule of 5 stuff auto generated from gpt
 /// @param other
 SolutionState::SolutionState(const SolutionState &other)
-	: matrix(other.matrix)
+	: matrix(other.matrix),
+	  rownames(other.rownames),
+	  colnames(other.colnames),
+	  current_column_to_colnames_idx(other.current_column_to_colnames_idx),
+	  how_many_x_vars(other.how_many_x_vars),
+	  solution(other.solution)
 {
 	std::cout << "SolutionState: copy constructor" << std::endl;
 }
 
 SolutionState::SolutionState(SolutionState &&other) noexcept
-	: matrix(std::move(other.matrix))
+	: matrix(std::move(other.matrix)),
+	  rownames(std::move(other.rownames)),
+	  colnames(std::move(other.colnames)),
+	  current_column_to_colnames_idx(std::move(other.current_column_to_colnames_idx)),
+	  how_many_x_vars(other.how_many_x_vars),
+	  solution(std::move(other.solution))
 {
 	std::cout << "SolutionState: move constructor" << std::endl;
 }
@@ -48,7 +58,14 @@ SolutionState::SolutionState(SolutionState &&other) noexcept
 SolutionState &SolutionState::operator=(const SolutionState &other)
 {
 	if (this != &other)
+	{
 		matrix = other.matrix;
+		rownames = other.rownames;
+		colnames = other.colnames;
+		current_column_to_colnames_idx = other.current_column_to_colnames_idx;
+		how_many_x_vars = other.how_many_x_vars;
+		solution = other.solution;
+	}
 	std::cout << "SolutionState: copy assignment" << std::endl;
 	return *this;
 }
@@ -56,7 +73,14 @@ SolutionState &SolutionState::operator=(const SolutionState &other)
 SolutionState &SolutionState::operator=(SolutionState &&other) noexcept
 {
 	if (this != &other)
+	{
 		matrix = std::move(other.matrix);
+		rownames = std::move(other.rownames);
+		colnames = std::move(other.colnames);
+		current_column_to_colnames_idx = std::move(other.current_column_to_colnames_idx);
+		how_many_x_vars = other.how_many_x_vars;
+		solution = std::move(other.solution);
+	}
 	std::cout << "SolutionState: move assignment" << std::endl;
 	return *this;
 }
@@ -213,6 +237,16 @@ void SolutionState::remove_essential_rows()
 	}
 }
 
+bool SolutionState::operator==(const SolutionState &other) const
+{
+    return matrix == other.matrix;
+}
+
+bool SolutionState::operator!=(const SolutionState &other) const
+{
+    return !(*this == other);
+}
+
 /// @brief print the matrix cover
 void SolutionState::printMatrix() // pass using the by reference operator &. this means we don't make a deep copy of the matrix just to print it
 {
@@ -224,21 +258,29 @@ void SolutionState::printMatrix() // pass using the by reference operator &. thi
 
 	how_many_x_vars = (int)current_column_to_colnames_idx.size();
 
-	int colwidth = how_many_x_vars < 9 ? 3 : 4;
+	int colwidth = 0;
+	for (int i = 0; i < how_many_x_vars; i++)
+	{
+		int header_width = (int)colnames[current_column_to_colnames_idx[i]].size();
+		if (header_width > colwidth)
+		{
+			colwidth = header_width;
+		}
+	}
+	colwidth += 1;
 
 	// --- Print header ---
-	std::cout << "\n" << colnames[current_column_to_colnames_idx[0]];
-
-	for (int i = 1; i < how_many_x_vars; i++)
+	std::cout << "\n";
+	for (int i = 0; i < how_many_x_vars; i++)
 	{
-		std::cout << std::setw(colwidth) << colnames[current_column_to_colnames_idx[i]];
+		std::cout << std::left << std::setw(colwidth) << colnames[current_column_to_colnames_idx[i]];
 	}
 	std::cout << std::endl;
 
 	// --- Print separator ---
-	for (int i = 0; i < how_many_x_vars + 2; i++)
+	for (int i = 0; i < how_many_x_vars * colwidth; i++)
 	{
-		std::cout << "--";
+		std::cout << "-";
 	}
 	std::cout << std::endl;
 
@@ -249,7 +291,7 @@ void SolutionState::printMatrix() // pass using the by reference operator &. thi
 		// print row values
 		for (Val v : matrix[i])
 		{
-			std::cout << valToChar(v) << "  ";
+			std::cout << std::left << std::setw(colwidth) << valToChar(v);
 		}
 
 		// print row name
@@ -268,17 +310,33 @@ void SolutionState::printSolution()
 	}
 }
 
+std::vector<std::vector<Val>> SolutionState::getMatrix()
+{
+    return matrix;
+}
+
 /// @brief this function mutates the state in place. it will apply these three things:
 ///		finding essential rows
 ///		delete dominating rows
 ///		delete dominated columns
 void SolutionState::reduce()
 {
-	remove_essential_rows();
+    SolutionState a_prime;
 
-	remove_dominated_rows();
-	printMatrix();
-	remove_dominated_columns();
+    do {
+		std::cout << "matrix state at start of reduce() loop" << std::endl;
+
+		printMatrix();
+		printSolution();
+
+        a_prime = *this;
+
+        remove_essential_rows();
+        remove_dominated_rows();
+        remove_dominated_columns();
+
+    } while (!matrix.empty() &&
+             *this != a_prime);
 }
 
 /// @brief pairwise comparison of rows
@@ -347,7 +405,7 @@ void SolutionState::remove_dominated_rows()
 /// @brief pairwise checks of every column
 void SolutionState::remove_dominated_columns()
 {
-	std::set<int, std::greater<int>> cols_to_remove;
+	// std::set<int, std::greater<int>> cols_to_remove;
 
 	uint rowCount = matrix.size();
 	uint colCount = matrix[0].size();
@@ -402,19 +460,21 @@ void SolutionState::remove_dominated_columns()
 
 			if (a_dominates_b)
 			{
-				cols_to_remove.emplace(colB);
-
-				// TODO check weights
+				// cols_to_remove.emplace(colB);
+				// reduce() loops over and over, so we can delete one column here and then return. reduce will run the loop again
+				// assign_a_variable(colB, ZERO);
+				remove_column(colB);
+				return;
 			}
 		}
 	}
 
 	// now we have a set of columns to remove
 	// each column we remove gets assigned that variable to 0
-	for (int column_to_del : cols_to_remove)
-	{
-		assign_a_variable(column_to_del, ZERO);
-	}
+	// for (int column_to_del : cols_to_remove)
+	// {
+	// 	assign_a_variable(column_to_del, ZERO);
+	// }
 }
 
 bool SolutionState::find_essential_row()
@@ -521,7 +581,7 @@ bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assi
 
 	remove_column(current_column_number);
 
-	printMatrix();
+	// printMatrix();
 
 	return true;
 }
