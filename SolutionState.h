@@ -1,6 +1,9 @@
 #ifndef SOLUTIONSTATE_H
 #define SOLUTIONSTATE_H
 
+#define NOT_ESSENTIAL false
+#define ESSENTIAL true
+
 #include <vector>
 #include <set>
 #include <iostream>
@@ -11,7 +14,6 @@
 #include <algorithm>
 
 #include "Val.h"
-#include "Assignment.h"
 
 class SolutionState
 {
@@ -27,7 +29,8 @@ private:
     int how_many_x_vars = 0;
 
     // std::vector<Assignment> solutionObj;
-    std::vector<Val> solution;
+    std::vector<Val> current_assignment;
+    std::vector<Val> forced_solution;
 
     void populate_solutions_array();
 
@@ -49,7 +52,7 @@ private:
     void remove_row_number(int rownum);
     void remove_column(int column_number);
 
-    bool assign_a_variable(int current_column_number, Val val_to_assign);
+    bool assign_a_variable(int current_column_number, Val val_to_assign, bool isForcedEssential);
 
 public:
     /// @brief default constructor
@@ -78,6 +81,8 @@ public:
 
     /// @brief reduces the matrix in place without making a copy of the object
     void reduce();
+
+    int cost();
 };
 
 #endif
