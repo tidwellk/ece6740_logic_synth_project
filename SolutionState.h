@@ -42,7 +42,7 @@ private:
     void remove_essential_rows();
     bool find_essential_row();
 
-    void remove_dominated_rows();
+    void remove_dominating_rows();
     void remove_dominated_columns();
 
     void remove_rows_with_same_val(int column_to_check, Val value);
