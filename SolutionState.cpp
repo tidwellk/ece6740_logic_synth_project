@@ -28,7 +28,7 @@ SolutionState::SolutionState(std::string filename)
 /// @brief destructor
 SolutionState::~SolutionState()
 {
-	//std::cout << "SolutionState: destructor" << std::endl;
+	// std::cout << "SolutionState: destructor" << std::endl;
 }
 
 /// @brief rule of 5 stuff auto generated from gpt
@@ -39,7 +39,8 @@ SolutionState::SolutionState(const SolutionState &other)
 	  colnames(other.colnames),
 	  current_column_to_colnames_idx(other.current_column_to_colnames_idx),
 	  how_many_x_vars(other.how_many_x_vars),
-	  solution(other.solution)
+	  current_assignment(other.current_assignment),
+	  forced_solution(other.forced_solution)
 {
 	std::cout << "SolutionState: copy constructor" << std::endl;
 }
@@ -50,7 +51,8 @@ SolutionState::SolutionState(SolutionState &&other) noexcept
 	  colnames(std::move(other.colnames)),
 	  current_column_to_colnames_idx(std::move(other.current_column_to_colnames_idx)),
 	  how_many_x_vars(other.how_many_x_vars),
-	  solution(std::move(other.solution))
+	  current_assignment(std::move(other.current_assignment)),
+	  forced_solution(std::move(other.forced_solution))
 {
 	std::cout << "SolutionState: move constructor" << std::endl;
 }
@@ -64,7 +66,8 @@ SolutionState &SolutionState::operator=(const SolutionState &other)
 		colnames = other.colnames;
 		current_column_to_colnames_idx = other.current_column_to_colnames_idx;
 		how_many_x_vars = other.how_many_x_vars;
-		solution = other.solution;
+		forced_solution = other.forced_solution;
+		current_assignment = other.current_assignment;
 	}
 	std::cout << "SolutionState: copy assignment" << std::endl;
 	return *this;
@@ -79,7 +82,8 @@ SolutionState &SolutionState::operator=(SolutionState &&other) noexcept
 		colnames = std::move(other.colnames);
 		current_column_to_colnames_idx = std::move(other.current_column_to_colnames_idx);
 		how_many_x_vars = other.how_many_x_vars;
-		solution = std::move(other.solution);
+		forced_solution = std::move(other.forced_solution);
+		current_assignment = std::move(other.current_assignment);
 	}
 	std::cout << "SolutionState: move assignment" << std::endl;
 	return *this;
@@ -89,7 +93,8 @@ void SolutionState::populate_solutions_array()
 {
 	for (int i = 0; i < how_many_x_vars; i++)
 	{
-		solution.push_back(UNASSIGNED);
+		forced_solution.push_back(UNASSIGNED);
+		current_assignment.push_back(UNASSIGNED);
 	}
 }
 
@@ -99,6 +104,8 @@ char SolutionState::valToChar(Val v)
 		return '1';
 	if (v == ZERO)
 		return '0';
+	if (v == UNASSIGNED)
+		return ' ';
 	return '-';
 }
 
@@ -239,12 +246,12 @@ void SolutionState::remove_essential_rows()
 
 bool SolutionState::operator==(const SolutionState &other) const
 {
-    return matrix == other.matrix;
+	return matrix == other.matrix;
 }
 
 bool SolutionState::operator!=(const SolutionState &other) const
 {
-    return !(*this == other);
+	return !(*this == other);
 }
 
 /// @brief print the matrix cover
@@ -302,17 +309,30 @@ void SolutionState::printMatrix() // pass using the by reference operator &. thi
 
 void SolutionState::printSolution()
 {
-	std::cout << "Solution\n"
-			  << "------------" << std::endl;
-	for (uint i = 0; i < solution.size(); i++)
+	const int name_width = 16;
+	const int value_width = 18;
+
+	std::cout << "Solution cost: " << cost() << "\n"
+			  << "--------------------------------------------------" << std::endl;
+	std::cout << std::left
+			  << std::setw(name_width) << "Variable"
+			  << std::setw(value_width) << "Forced Solution"
+			  << std::setw(value_width) << "Current Assignment"
+			  << std::endl;
+
+	for (uint i = 0; i < forced_solution.size(); i++)
 	{
-		std::cout << colnames[i] << "\t" << valToChar(solution[i]) << std::endl;
+		std::cout << std::left
+				  << std::setw(name_width) << colnames[i]
+				  << std::setw(value_width) << valToChar(forced_solution[i])
+				  << std::setw(value_width) << valToChar(current_assignment[i])
+				  << std::endl;
 	}
 }
 
 std::vector<std::vector<Val>> SolutionState::getMatrix()
 {
-    return matrix;
+	return matrix;
 }
 
 /// @brief this function mutates the state in place. it will apply these three things:
@@ -321,22 +341,42 @@ std::vector<std::vector<Val>> SolutionState::getMatrix()
 ///		delete dominated columns
 void SolutionState::reduce()
 {
-    SolutionState a_prime;
+	SolutionState a_prime;
 
-    do {
+	do
+	{
 		std::cout << "matrix state at start of reduce() loop" << std::endl;
 
 		printMatrix();
 		printSolution();
 
-        a_prime = *this;
+		a_prime = *this;
 
-        remove_essential_rows();
-        remove_dominating_rows();
-        remove_dominated_columns();
+		remove_essential_rows();
+		printMatrix();
+		printSolution();
+		remove_dominated_rows();
+		printMatrix();
+		printSolution();
+		remove_dominated_columns();
 
-    } while (!matrix.empty() &&
-             *this != a_prime);
+	} while (!matrix.empty() &&
+			 *this != a_prime);
+}
+
+int SolutionState::cost()
+{
+	int result = 0;
+
+	for (Val v : forced_solution)
+	{
+		if (v == ONE)
+		{
+			result++;
+		}
+	}
+
+	return result;
 }
 
 /// @brief pairwise comparison of rows
@@ -464,19 +504,12 @@ void SolutionState::remove_dominated_columns()
 			{
 				// cols_to_remove.emplace(colB);
 				// reduce() loops over and over, so we can delete one column here and then return. reduce will run the loop again
-				// assign_a_variable(colB, ZERO);
-				remove_column(colB);
+				assign_a_variable(colB, ZERO, NOT_ESSENTIAL);
+
 				return;
 			}
 		}
 	}
-
-	// now we have a set of columns to remove
-	// each column we remove gets assigned that variable to 0
-	// for (int column_to_del : cols_to_remove)
-	// {
-	// 	assign_a_variable(column_to_del, ZERO);
-	// }
 }
 
 bool SolutionState::find_essential_row()
@@ -502,7 +535,7 @@ bool SolutionState::find_essential_row()
 
 		if (howManyAssigned == 1)
 		{
-			assign_a_variable(colNumber, assignedVal);
+			assign_a_variable(colNumber, assignedVal, ESSENTIAL);
 
 			return true;
 		}
@@ -551,7 +584,24 @@ void SolutionState::remove_column(int column_number)
 		current_column_to_colnames_idx.begin() + column_number);
 }
 
-bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assign)
+/// @brief Description from gpt:
+/// You need two different operations
+/// 1. Forced assignment (essential rows)
+
+/// update solution
+/// remove rows with matching value
+/// remove column
+
+/// 2. Column dominance
+
+/// DO NOT commit to solution yet
+/// remove rows where column == 0
+/// remove the column
+/// @param current_column_number
+/// @param val_to_assign
+/// @param isForcedEssential
+/// @return
+bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assign, bool isForcedEssential)
 {
 	int actual_var_column = current_column_to_colnames_idx[current_column_number];
 
@@ -567,23 +617,37 @@ bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assi
 	This variable is set to value of literal, column is removed, and any row
 	where variable has same value is removed.
 	*/
-	if (solution[actual_var_column] == UNASSIGNED ||
-		solution[actual_var_column] == DC ||
-		solution[actual_var_column] == val_to_assign)
+	// turns out that we need to
+	if (isForcedEssential)
 	{
-		solution[actual_var_column] = val_to_assign;
+		if (forced_solution[actual_var_column] == UNASSIGNED ||
+			forced_solution[actual_var_column] == DC ||
+			forced_solution[actual_var_column] == val_to_assign)
+		{
+			forced_solution[actual_var_column] = val_to_assign;
+		}
+		else
+		{
+			std::cout << "contradiction in solution" << std::endl;
+			return false;
+		}
+	}
+
+	if (current_assignment[actual_var_column] == UNASSIGNED ||
+		current_assignment[actual_var_column] == DC ||
+		current_assignment[actual_var_column] == val_to_assign)
+	{
+		current_assignment[actual_var_column] = val_to_assign;
 	}
 	else
 	{
-		std::cout << "contradiction in solution" << std::endl;
-		exit(1);
+		std::cout << "contradiction in current assignment" << std::endl;
+		return false;
 	}
 
 	remove_rows_with_same_val(current_column_number, val_to_assign);
 
 	remove_column(current_column_number);
-
-	// printMatrix();
 
 	return true;
 }
