@@ -1,6 +1,4 @@
-#include <iostream>
-
-#include "SolutionState.h"
+#include "main.h"
 
 /*
 When you find an essential row, what you really found is a forced variable assignment, not merely “a row to delete.”
@@ -40,11 +38,103 @@ The essential row is just the clue that tells you the assignment is forced. The 
 
 One subtle point: if another row has the same variable with the same polarity, it gets removed as satisfied. If it has the opposite polarity, it is not removed automatically — it just loses that literal and may become smaller, maybe even essential itself.*/
 
-std::vector<Val> bcp(SolutionState a)
+std::optional<SolutionState> bcp(SolutionState f, int upperbound)
 {
-    std::vector<Val> best;
+    /* pseudocode from textbook page 336
 
-    return best;
+    BCP(F, U, currentSol)
+    {
+1   (F, currentSol) = REDUCE(F, currentSol)
+    if (terminalCase(F))
+    {
+        if (F != empty and COST( currentSol) < U)
+        {
+            U = COST( currentSol)
+2           return ( currentSol)
+        }
+3       else return ("no solution")
+    }
+
+4   L = LOWER_BOUND{F, currentSol)
+      if (L >= U) return ("no solution")
+
+5   Xi = CHOOSE_VAR(F)
+
+6   S 1 = BCP(Fx, U, currentSol UNION {xi})
+
+7   if (cost(S1) = L) return (S1)
+    S 0 = BCP(Fxi, U, currentSol)
+
+8   return BEST_SOLUTION(S1, SO)
+    }
+    */
+
+    f.reduce();
+
+    if (terminalCase(f))
+    {
+        if (!f.isEmpty() &&
+            f.cost() < upperbound)
+        {
+            upperbound = f.cost();
+        }
+        else
+        {
+            // return "no solution"
+            return std::nullopt;
+        }
+    }
+
+    int lowerbound = f.lower_bound();
+
+    if (lowerbound >= upperbound)
+    {
+        // return no solution
+        return std::nullopt;
+    }
+
+    // at this point we need to branch
+    /*
+    // TODO
+    the pseudocode says xi = choose_var(f). maybe choose_var could be a public function in the class because
+        it really depends on the current state.
+    */
+    int chosen_column = f.choose_var();
+    /*
+     // TODO
+     then we could make a copy of f, so S1 = f AND assign_var(xi = 1).
+     S1 = f    uses the copy constructor to do a deep copy
+     S1.assign_var()
+     */
+    SolutionState s1 = f;
+    s1.assign_a_variable(chosen_column, ONE, ESSENTIAL);
+
+    // do we need to call reduce here? im not sure
+
+    if (s1.cost() == lowerbound)
+    {
+
+        return s1;
+    }
+
+    //  S0 = f AND assign_var(xi = 0)
+    SolutionState s0 = f;
+    s0.assign_a_variable(chosen_column, ZERO, ESSENTIAL);
+
+    // might need to s0.reduce() ? i don't know
+
+    return best_solution(s1, s0);
+}
+
+void test_reduce(std::string filename)
+{
+    SolutionState a(filename);
+    a.printMatrix();
+    a.printSolution();
+    std::cout << "matrix: reduce()" << std::endl;
+    a.reduce();
+    a.printMatrix();
+    a.printSolution();
 }
 
 int main(int argc, char **argv)
@@ -60,28 +150,65 @@ int main(int argc, char **argv)
 
     std::string filename = argv[1];
 
-    SolutionState currentCover(filename);
+    test_reduce(filename);
 
-    currentCover.printMatrix();
+    test_reduce("h.txt");
 
-    currentCover.printSolution();
-
-    std::cout << "matrix: reduce()" << std::endl;
-
-    currentCover.reduce();
-
-    currentCover.printMatrix();
-    currentCover.printSolution();
-
-    // SolutionState test_mis("h.txt");
-
-    // test_mis.printMatrix();
-
-    // test_mis.reduce();
-
-    // test_mis.printMatrix();
-
-    // std::vector<Val> bestcover = bcp(currentCover);
+    // std::vector<Val> bestcover = bcp(test_mis);
 
     return 0;
+}
+
+/// @brief check if we have a valid solution. it is invalid if we have a conflicting assignment of essential variables
+///         (this boolean is changed in the assignment function)
+///         or if we have a row of all DC don't cares
+/// @param f
+/// @return
+bool isInfeasible(SolutionState &f)
+{
+    // check for conflicting assignments in the solution
+    if (f.is_valid() == false)
+    {
+        return true;
+    }
+
+    // check for no remaining literals for a clause
+    for (auto &row : f.getMatrix())
+    {
+        bool all_dont_cares = true;
+        for (Val element : row)
+        {
+            if (element != DC)
+            {
+                all_dont_cares = false;
+                break;
+            }
+        }
+
+        if (all_dont_cares)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool terminalCase(SolutionState &f)
+{
+    if (f.isEmpty())
+    {
+        return true;
+    }
+
+    if (isInfeasible(f))
+    {
+        return true;
+    }
+    return false;
+}
+
+SolutionState best_solution(SolutionState s1, SolutionState s0)
+{
+    // TODO
+    return s1;
 }

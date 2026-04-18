@@ -11,7 +11,7 @@ $(TARGET): $(OBJS)
 run: $(TARGET)
 	./$(TARGET) f.txt
 
-main.o: main.cpp SolutionState.h Val.h
+main.o: main.cpp SolutionState.h Val.h main.h
 	$(CXX) $(CXXFLAGS) -c main.cpp
 
 SolutionState.o: SolutionState.cpp SolutionState.h Val.h

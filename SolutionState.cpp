@@ -10,6 +10,8 @@ SolutionState::SolutionState()
 /// @param filename text file to read
 SolutionState::SolutionState(std::string filename)
 {
+	is_valid_solution = true;
+
 	if (!readInputFile_isOK(filename))
 	{
 		std::cout << "could not read input file" << std::endl;
@@ -239,8 +241,8 @@ void SolutionState::remove_essential_rows()
 	while (find_essential_row() == true)
 	{
 		std::cout << "found essential row" << std::endl;
-		printSolution();
-		printMatrix();
+		// printSolution();
+		// printMatrix();
 	}
 }
 
@@ -355,7 +357,7 @@ void SolutionState::reduce()
 		remove_essential_rows();
 		printMatrix();
 		printSolution();
-		remove_dominated_rows();
+		remove_dominating_rows();
 		printMatrix();
 		printSolution();
 		remove_dominated_columns();
@@ -364,6 +366,8 @@ void SolutionState::reduce()
 			 *this != a_prime);
 }
 
+/// @brief this function returns the solution cost. it is the number of ones in the forced solution
+/// @return 
 int SolutionState::cost()
 {
 	int result = 0;
@@ -377,6 +381,37 @@ int SolutionState::cost()
 	}
 
 	return result;
+}
+
+/// @brief getter for the is_valid boolean
+/// @return 
+bool SolutionState::is_valid()
+{
+    return is_valid_solution;
+}
+
+std::vector<Val> SolutionState::getSolution()
+{
+    return this->current_assignment;
+}
+
+bool SolutionState::isEmpty()
+{
+    return matrix.size() == 0;
+}
+
+/// @brief this will return the best lower bound estimate.
+///			const means it is not allowed to mutate the solver state, 
+///			but we can make a copy of the matrix and modify that instead
+/// @return 
+int SolutionState::lower_bound() const
+{
+	// std::vector<std::vector<Val>> temp = matrix;
+	auto temp = matrix;
+
+	/// TODO i think we might need this.cost() + whatever the MIS algorithm returns
+	// this.cost() is the cost of the solution so far
+    return 0;
 }
 
 /// @brief pairwise comparison of rows
@@ -584,6 +619,8 @@ void SolutionState::remove_column(int column_number)
 		current_column_to_colnames_idx.begin() + column_number);
 }
 
+
+
 /// @brief Description from gpt:
 /// You need two different operations
 /// 1. Forced assignment (essential rows)
@@ -629,6 +666,7 @@ bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assi
 		else
 		{
 			std::cout << "contradiction in solution" << std::endl;
+			is_valid_solution = false;
 			return false;
 		}
 	}
@@ -642,6 +680,7 @@ bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assi
 	else
 	{
 		std::cout << "contradiction in current assignment" << std::endl;
+		is_valid_solution = false;
 		return false;
 	}
 
@@ -650,4 +689,11 @@ bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assi
 	remove_column(current_column_number);
 
 	return true;
+}
+
+/// @brief choose the best variable to do the branching with. might need to calculate the row/column weights
+/// @return 
+int SolutionState::choose_var()
+{
+    return 0;
 }
