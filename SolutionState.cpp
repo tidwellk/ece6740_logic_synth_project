@@ -380,10 +380,10 @@ int SolutionState::cost()
 }
 
 /// @brief pairwise comparison of rows
-/// i think i wrote this backwards though, the one that gets removed is the dominator i guess.
-/// it matches what is in the UCP-BCP.pdf slides and behaves accordingly even though i named
-/// the boolean backwards
-void SolutionState::remove_dominated_rows()
+/// If row i dominates row j, this function removes row i.
+/// Checks every pair of rows and adds the dominating ones to a set.
+/// Then removes all the dominating rows at the end.
+void SolutionState::remove_dominating_rows()
 {
 	// this makes a set which iterates in descending order
 	std::set<int, std::greater<int>> rows_to_remove;
@@ -409,18 +409,20 @@ void SolutionState::remove_dominated_rows()
 			// need to compare them elementwise
 			for (uint elementwise = 0; elementwise < row_i.size(); elementwise++)
 			{
-				// we want to check if i dominates j, if so we remove j
+				// we want to check if i dominates j and can be removed
 				Val row_i_el = row_i[elementwise];
+				Val row_j_el = row_j[elementwise];
 
-				// if the element in i is dont care, then we skip checking j
-				if (row_i_el == DC)
+				// Possible combinations of row_i_el and row_j_el:
+				//                 i: - - - 0 0 0 1 1 1
+				//                 j: - 0 1 - 0 1 - 0 1
+				//     Dominates?     1 0 0 1 1 0 1 0 1 (Boolean indicating if i dominates j in the above combination)
+				// i dominates j if for each column, the two are equal or j is a DC.
+				if (row_i_el == row_j_el || row_j_el == DC)
 				{
 					continue;
 				}
-
-				Val row_j_el = row_j[elementwise];
-
-				if (row_i_el != row_j_el)
+				else 
 				{
 					i_dominates_j = false;
 					break;
@@ -430,7 +432,7 @@ void SolutionState::remove_dominated_rows()
 			// elementwise check is done.
 			if (i_dominates_j)
 			{
-				rows_to_remove.emplace(inner);
+				rows_to_remove.emplace(outer);
 			}
 		}
 	}
