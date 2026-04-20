@@ -88,7 +88,7 @@ private:
     
     /// @brief returns the cost of the current solution
     /// @return 
-    int cost();
+    int cost() const;
     
     /// @brief getter for the is_valid_solution private variable
     /// @return 

@@ -366,9 +366,9 @@ void SolutionState::reduce()
 			 *this != a_prime);
 }
 
-/// @brief this function returns the solution cost. it is the number of ones in the forced solution
-/// @return 
-int SolutionState::cost()
+/// @brief this function returns the solution cost. It is the number of ones in the forced solution
+/// @return
+int SolutionState::cost() const
 {
 	int result = 0;
 
@@ -384,34 +384,60 @@ int SolutionState::cost()
 }
 
 /// @brief getter for the is_valid boolean
-/// @return 
+/// @return
 bool SolutionState::is_valid()
 {
-    return is_valid_solution;
+	return is_valid_solution;
 }
 
 std::vector<Val> SolutionState::getSolution()
 {
-    return this->current_assignment;
+	return this->current_assignment;
 }
 
 bool SolutionState::isEmpty()
 {
-    return matrix.size() == 0;
+	return matrix.size() == 0;
 }
 
 /// @brief this will return the best lower bound estimate.
-///			const means it is not allowed to mutate the solver state, 
+///			const means it is not allowed to mutate the solver state,
 ///			but we can make a copy of the matrix and modify that instead
-/// @return 
+/// @return
 int SolutionState::lower_bound() const
 {
-	// std::vector<std::vector<Val>> temp = matrix;
-	auto temp = matrix;
+	int min_cost = -1;
 
-	/// TODO i think we might need this.cost() + whatever the MIS algorithm returns
-	// this.cost() is the cost of the solution so far
-    return 0;
+	// Calculate the cost of implementing each row as part of the solution.
+	for (const auto &row : matrix)
+	{
+		int current_cost = 0;
+		for (Val column : row)
+		{
+			// Skip the row if it contains a 0 since it cannot be part of the solution.
+			if (column == ZERO)
+			{
+				current_cost = -1;
+				break;
+			}
+			// Otherwise add its cost if it's implemented at the row.
+			else if (column == ONE)
+			{
+				current_cost++;
+			}
+		}
+		if (min_cost == -1)
+		{
+			min_cost = current_cost;
+		}
+		else if (current_cost != -1 && current_cost < min_cost)
+		{
+			min_cost = current_cost;
+		}
+	}
+
+	// The current minimal cost is the cost of the currest solution plus the cost of our lower bound.
+	return this->cost() + (min_cost == -1 ? 0 : min_cost);
 }
 
 /// @brief pairwise comparison of rows
@@ -457,7 +483,7 @@ void SolutionState::remove_dominating_rows()
 				{
 					continue;
 				}
-				else 
+				else
 				{
 					i_dominates_j = false;
 					break;
@@ -619,8 +645,6 @@ void SolutionState::remove_column(int column_number)
 		current_column_to_colnames_idx.begin() + column_number);
 }
 
-
-
 /// @brief Description from gpt:
 /// You need two different operations
 /// 1. Forced assignment (essential rows)
@@ -692,8 +716,8 @@ bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assi
 }
 
 /// @brief choose the best variable to do the branching with. might need to calculate the row/column weights
-/// @return 
+/// @return
 int SolutionState::choose_var()
 {
-    return 0;
+	return 0;
 }

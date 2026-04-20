@@ -137,6 +137,18 @@ void test_reduce(std::string filename)
     a.printSolution();
 }
 
+/**
+ * Temporary test function.
+ */
+void test_lower_bound(std::string filename)
+{
+    SolutionState a(filename);
+    std::cout << "lower_bound before reduce: " << a.lower_bound() << std::endl;
+    a.reduce();
+    std::cout << "lower_bound after reduce:  " << a.lower_bound() << std::endl;
+    a.printSolution();
+}
+
 int main(int argc, char **argv)
 {
     std::cout << "main()" << std::endl;
@@ -149,15 +161,17 @@ int main(int argc, char **argv)
     }
 
     std::string filename = argv[1];
-
+    
+    test_lower_bound(filename); // and reduce because it's called in here too.
+    
     test_reduce(filename);
 
     test_reduce("h.txt");
 
     // std::vector<Val> bestcover = bcp(test_mis);
-
     return 0;
 }
+
 
 /// @brief check if we have a valid solution. it is invalid if we have a conflicting assignment of essential variables
 ///         (this boolean is changed in the assignment function)
