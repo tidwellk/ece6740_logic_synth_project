@@ -406,7 +406,7 @@ bool SolutionState::isEmpty()
 /// @return
 int SolutionState::lower_bound() const
 {
-	int min_cost = -1;
+	int MIS = 0;
 
 	// Calculate the cost of implementing each row as part of the solution.
 	for (const auto &row : matrix)
@@ -426,13 +426,13 @@ int SolutionState::lower_bound() const
 				current_cost++;
 			}
 		}
-		if (min_cost == -1)
+		if (MIS == -1)
 		{
-			min_cost = current_cost;
+			MIS = current_cost;
 		}
-		else if (current_cost != -1 && current_cost < min_cost)
+		else if (current_cost != -1 && current_cost > MIS)
 		{
-			min_cost = current_cost;
+			MIS = current_cost;
 		}
 	}
 
