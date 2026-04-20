@@ -207,8 +207,15 @@ bool terminalCase(SolutionState &f)
     return false;
 }
 
+/// @brief returns the lowest cost solution
+/// @param s1 
+/// @param s0 
+/// @return 
 SolutionState best_solution(SolutionState s1, SolutionState s0)
 {
-    // TODO
-    return s1;
+    if (s1.cost() < s0.cost())
+    {
+        return s1;
+    }
+    return s0;
 }
