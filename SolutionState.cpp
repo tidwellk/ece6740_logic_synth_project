@@ -402,42 +402,86 @@ bool SolutionState::isEmpty()
 
 /// @brief this will return the best lower bound estimate.
 ///			const means it is not allowed to mutate the solver state,
-///			but we can make a copy of the matrix and modify that instead
-/// @return
+///			but we can make a copy of the matrix and modify that instead.
+///
+/// @return -1 if we find an infeasible row, otherwise the lower bound cost of the current matrix (current + new lower bound)
 int SolutionState::lower_bound() const
 {
-	int MIS = 0;
+	// Create a mutable copy of the matrix to work with.
+	std::vector<std::vector<Val>> matrix_copy = matrix;
 
-	// Calculate the cost of implementing each row as part of the solution.
-	for (const auto &row : matrix)
+	int matrix_cost = 0;
+	while(!matrix_copy.empty())
 	{
-		int current_cost = 0;
-		for (Val column : row)
+		// Calculate the cost of implementing each row as part of the solution.
+		int min_row = -1;
+		int min_row_cost = -1;
+		for (int i = 0; i < (int)matrix_copy.size(); i++) // size is the number of rows
 		{
-			// Skip the row if it contains a 0 since it cannot be part of the solution.
-			if (column == ZERO)
+			int current_row_cost = 0;
+			for (Val column_entry : matrix_copy[i])
 			{
-				current_cost = -1;
-				break;
+				// Skip the row if it contains a 0 since it cannot be part of the solution.
+				if (column_entry == ZERO)
+				{
+					current_row_cost = -1;
+					break;
+				}
+				// Otherwise add its cost if it's implemented at the row.
+				else if (column_entry == ONE)
+				{
+					current_row_cost++;
+				}
 			}
-			// Otherwise add its cost if it's implemented at the row.
-			else if (column == ONE)
+			if (min_row_cost == -1 || (current_row_cost != -1 && current_row_cost < min_row_cost))
 			{
-				current_cost++;
+				min_row_cost = current_row_cost;
+				min_row = i;
 			}
 		}
-		if (MIS == -1)
+
+		// If all remaining rows have zeros we can stop here.
+		if(min_row_cost == -1)
 		{
-			MIS = current_cost;
+			min_row_cost = 0;
+			break;
 		}
-		else if (current_cost != -1 && current_cost > MIS)
+
+		// Remember the columns of this row covers before erasing it.
+		std::vector<int> one_entries;
+		for (int j = 0; j < (int)matrix_copy[min_row].size(); j++)
+			if (matrix_copy[min_row][j] == ONE) one_entries.push_back(j);
+
+		// Now we've identified the row with the lowest cost to implement. First verify feasibility,
+		if(one_entries.empty())
 		{
-			MIS = current_cost;
+			return -1; // being empty means all entries were DC.
 		}
+
+		// then add its cost,
+		matrix_cost += min_row_cost;
+
+		// Remove it from the mutable copy of the original matrix,
+		matrix_copy.erase(matrix_copy.begin() + min_row);
+
+		// Remove any row that has a 1 in the same column as the implemented row (start at the end and go backwards since we are removing rows to avoid skipping any).
+		for (int i = matrix_copy.size() - 1; i >= 0; i--) 
+		{
+			for (int entry : one_entries)
+			{
+				if (matrix_copy[i][entry] == ONE)
+				{
+					matrix_copy.erase(matrix_copy.begin() + i);
+					break;
+				}
+			}
+		}
+
+		// and repeat until the matrix is empty or we find an infeasible row.
 	}
 
 	// The current minimal cost is the cost of the currest solution plus the cost of our lower bound.
-	return this->cost() + (min_cost == -1 ? 0 : min_cost);
+	return this->cost() + matrix_cost;
 }
 
 /// @brief pairwise comparison of rows
