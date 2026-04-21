@@ -366,9 +366,9 @@ void SolutionState::reduce()
 			 *this != a_prime);
 }
 
-/// @brief this function returns the solution cost. it is the number of ones in the forced solution
-/// @return 
-int SolutionState::cost()
+/// @brief this function returns the solution cost. It is the number of ones in the forced solution
+/// @return
+int SolutionState::cost() const
 {
 	int result = 0;
 
@@ -384,34 +384,104 @@ int SolutionState::cost()
 }
 
 /// @brief getter for the is_valid boolean
-/// @return 
+/// @return
 bool SolutionState::is_valid()
 {
-    return is_valid_solution;
+	return is_valid_solution;
 }
 
 std::vector<Val> SolutionState::getSolution()
 {
-    return this->current_assignment;
+	return this->current_assignment;
 }
 
 bool SolutionState::isEmpty()
 {
-    return matrix.size() == 0;
+	return matrix.size() == 0;
 }
 
 /// @brief this will return the best lower bound estimate.
-///			const means it is not allowed to mutate the solver state, 
-///			but we can make a copy of the matrix and modify that instead
-/// @return 
+///			const means it is not allowed to mutate the solver state,
+///			but we can make a copy of the matrix and modify that instead.
+///
+/// @return -1 if we find an infeasible row, otherwise the lower bound cost of the current matrix (current + new lower bound)
 int SolutionState::lower_bound() const
 {
-	// std::vector<std::vector<Val>> temp = matrix;
-	auto temp = matrix;
+	// Create a mutable copy of the matrix to work with.
+	std::vector<std::vector<Val>> matrix_copy = matrix;
 
-	/// TODO i think we might need this.cost() + whatever the MIS algorithm returns
-	// this.cost() is the cost of the solution so far
-    return 0;
+	int matrix_cost = 0;
+	while(!matrix_copy.empty())
+	{
+		// Calculate the cost of implementing each row as part of the solution.
+		int min_row = -1;
+		int min_row_cost = -1;
+		for (int i = 0; i < (int)matrix_copy.size(); i++) // size is the number of rows
+		{
+			int current_row_cost = 0;
+			for (Val column_entry : matrix_copy[i])
+			{
+				// Skip the row if it contains a 0 since it cannot be part of the solution.
+				if (column_entry == ZERO)
+				{
+					current_row_cost = -1;
+					break;
+				}
+				// Otherwise add its cost if it's implemented at the row.
+				else if (column_entry == ONE)
+				{
+					current_row_cost++;
+				}
+			}
+			if (min_row_cost == -1 || (current_row_cost != -1 && current_row_cost < min_row_cost))
+			{
+				min_row_cost = current_row_cost;
+				min_row = i;
+			}
+		}
+
+		// If all remaining rows have zeros we can stop here.
+		if(min_row_cost == -1)
+		{
+			min_row_cost = 0;
+			break;
+		}
+
+		// Remember the columns of this row covers before erasing it.
+		std::vector<int> one_entries;
+		for (int j = 0; j < (int)matrix_copy[min_row].size(); j++)
+			if (matrix_copy[min_row][j] == ONE) one_entries.push_back(j);
+
+		// Now we've identified the row with the lowest cost to implement. First verify feasibility,
+		if(one_entries.empty())
+		{
+			return -1; // being empty means all entries were DC.
+		}
+
+		// then add its cost,
+		matrix_cost += min_row_cost;
+
+		// Remove it from the mutable copy of the original matrix,
+		matrix_copy.erase(matrix_copy.begin() + min_row);
+
+		// Remove any row that has a 1 in the same column as the implemented row (start at the end and go backwards since we are removing rows to avoid skipping any).
+		for (int i = matrix_copy.size() - 1; i >= 0; i--) 
+		{
+			for (int entry : one_entries)
+			{
+				if (matrix_copy[i][entry] == ONE)
+				{
+					matrix_copy.erase(matrix_copy.begin() + i);
+					break;
+				}
+			}
+		}
+
+		// and repeat until the matrix is empty or we find an infeasible row.
+	}
+
+	// The current minimal cost is the cost of the currest solution plus the cost of our lower bound.
+	return this->cost() + matrix_cost;
 }
 
 /// @brief pairwise comparison of rows
@@ -457,7 +527,7 @@ void SolutionState::remove_dominating_rows()
 				{
 					continue;
 				}
-				else 
+				else
 				{
 					i_dominates_j = false;
 					break;
@@ -619,8 +689,6 @@ void SolutionState::remove_column(int column_number)
 		current_column_to_colnames_idx.begin() + column_number);
 }
 
-
-
 /// @brief Description from gpt:
 /// You need two different operations
 /// 1. Forced assignment (essential rows)
@@ -692,8 +760,8 @@ bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assi
 }
 
 /// @brief choose the best variable to do the branching with. might need to calculate the row/column weights
-/// @return 
+/// @return
 int SolutionState::choose_var()
 {
-    return 0;
+	return 0;
 }
