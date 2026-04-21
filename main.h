@@ -14,8 +14,8 @@ std::optional<SolutionState> bcp(SolutionState a, int upperbound);
 void test_reduce(std::string filename);
 
 bool isInfeasible(SolutionState &f);
-bool terminalCase(SolutionState &f);
+// bool terminalCase(SolutionState &f);
 
-SolutionState best_solution(SolutionState s1, SolutionState s0);
+std::optional<SolutionState> best_solution(std::optional<SolutionState> s1, std::optional<SolutionState> s0);
 
 #endif

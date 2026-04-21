@@ -71,19 +71,26 @@ std::optional<SolutionState> bcp(SolutionState f, int upperbound)
 
     f.reduce();
 
-    if (terminalCase(f))
+    // RECURSIVE BASE CASES
+    if (f.isEmpty())
     {
-        if (!f.isEmpty() &&
-            f.cost() < upperbound)
+        if (f.cost() < upperbound)
         {
             upperbound = f.cost();
+            return f;
         }
         else
         {
-            // return "no solution"
             return std::nullopt;
         }
     }
+
+    if (isInfeasible(f))
+    {
+        return std::nullopt;
+    }
+
+    // RECURSIVE CALLS
 
     int lowerbound = f.lower_bound();
 
@@ -107,23 +114,42 @@ std::optional<SolutionState> bcp(SolutionState f, int upperbound)
      S1.assign_var()
      */
     SolutionState s1 = f;
-    s1.assign_a_variable(chosen_column, ONE, ESSENTIAL);
 
-    // do we need to call reduce here? im not sure
-
-    if (s1.cost() == lowerbound)
+    std::optional<SolutionState> s1opt;
+    if (!s1.assign_a_variable(chosen_column, ONE, ESSENTIAL))
     {
-
-        return s1;
+        // if assign a variable created a contradiction, then we have no solution here
+        s1opt = std::nullopt;
+    }
+    else
+    {
+        s1opt = bcp(s1, upperbound);
+        if (s1opt)
+        {
+            if (s1opt->cost() == lowerbound)
+            {
+                return s1opt;
+            }
+            upperbound = std::min(upperbound, s1opt->cost());
+        }
     }
 
     //  S0 = f AND assign_var(xi = 0)
     SolutionState s0 = f;
-    s0.assign_a_variable(chosen_column, ZERO, ESSENTIAL);
+    std::optional<SolutionState> s0opt;
 
-    // might need to s0.reduce() ? i don't know
+    if (!s0.assign_a_variable(chosen_column, ZERO, ESSENTIAL))
+    {
+        // if assign the variable fails, we have no solution
+        s0opt = std::nullopt;
+    }
+    else
+    {
+        s0opt = bcp(s0, upperbound);
+    }
 
-    return best_solution(s1, s0);
+
+    return best_solution(s1opt, s0opt);
 }
 
 void test_reduce(std::string filename)
@@ -161,17 +187,30 @@ int main(int argc, char **argv)
     }
 
     std::string filename = argv[1];
-    
-    test_lower_bound(filename); // and reduce because it's called in here too.
-    
-    test_reduce(filename);
 
-    test_reduce("h.txt");
+    SolutionState f(filename);
+
+    // test_lower_bound(filename); // and reduce because it's called in here too.
+
+    // test_reduce(filename);
+
+    // test_reduce("h.txt");
+
+    std::optional<SolutionState> f_solution = bcp(f, f.getHowManyXVars() + 1);
+
+    if (f_solution)
+    {
+        std::cout << "solution exists" << std::endl;
+        f_solution->printSolution();
+    }
+    else
+    {
+        std::cout << "no solution" << std::endl;
+    }
 
     // std::vector<Val> bestcover = bcp(test_mis);
     return 0;
 }
-
 
 /// @brief check if we have a valid solution. it is invalid if we have a conflicting assignment of essential variables
 ///         (this boolean is changed in the assignment function)
@@ -207,27 +246,23 @@ bool isInfeasible(SolutionState &f)
     return false;
 }
 
-bool terminalCase(SolutionState &f)
+/// @brief returns the lowest cost solution, or nullopt if neither branch has a solution
+/// @param s1
+/// @param s0
+/// @return
+std::optional<SolutionState> best_solution(std::optional<SolutionState> s1, std::optional<SolutionState> s0)
 {
-    if (f.isEmpty())
+    if (!s1)
     {
-        return true;
+        return s0;
     }
 
-    if (isInfeasible(f))
+    if (!s0)
     {
-        return true;
+        return s1;
     }
-    return false;
-}
 
-/// @brief returns the lowest cost solution
-/// @param s1 
-/// @param s0 
-/// @return 
-SolutionState best_solution(SolutionState s1, SolutionState s0)
-{
-    if (s1.cost() < s0.cost())
+    if (s1->cost() < s0->cost())
     {
         return s1;
     }

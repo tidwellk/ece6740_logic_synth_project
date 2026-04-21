@@ -2,6 +2,7 @@
 
 /// @brief default constructor
 SolutionState::SolutionState()
+	: is_valid_solution(true)
 {
 	std::cout << "SolutionState: default constructor" << std::endl;
 }
@@ -9,9 +10,8 @@ SolutionState::SolutionState()
 /// @brief This constructor reads a text file into the object.
 /// @param filename text file to read
 SolutionState::SolutionState(std::string filename)
+	: is_valid_solution(true)
 {
-	is_valid_solution = true;
-
 	if (!readInputFile_isOK(filename))
 	{
 		std::cout << "could not read input file" << std::endl;
@@ -42,7 +42,8 @@ SolutionState::SolutionState(const SolutionState &other)
 	  current_column_to_colnames_idx(other.current_column_to_colnames_idx),
 	  how_many_x_vars(other.how_many_x_vars),
 	  current_assignment(other.current_assignment),
-	  forced_solution(other.forced_solution)
+	  forced_solution(other.forced_solution),
+	  is_valid_solution(other.is_valid_solution)
 {
 	std::cout << "SolutionState: copy constructor" << std::endl;
 }
@@ -54,7 +55,8 @@ SolutionState::SolutionState(SolutionState &&other) noexcept
 	  current_column_to_colnames_idx(std::move(other.current_column_to_colnames_idx)),
 	  how_many_x_vars(other.how_many_x_vars),
 	  current_assignment(std::move(other.current_assignment)),
-	  forced_solution(std::move(other.forced_solution))
+	  forced_solution(std::move(other.forced_solution)),
+	  is_valid_solution(other.is_valid_solution)
 {
 	std::cout << "SolutionState: move constructor" << std::endl;
 }
@@ -70,6 +72,7 @@ SolutionState &SolutionState::operator=(const SolutionState &other)
 		how_many_x_vars = other.how_many_x_vars;
 		forced_solution = other.forced_solution;
 		current_assignment = other.current_assignment;
+		is_valid_solution = other.is_valid_solution;
 	}
 	std::cout << "SolutionState: copy assignment" << std::endl;
 	return *this;
@@ -86,6 +89,7 @@ SolutionState &SolutionState::operator=(SolutionState &&other) noexcept
 		how_many_x_vars = other.how_many_x_vars;
 		forced_solution = std::move(other.forced_solution);
 		current_assignment = std::move(other.current_assignment);
+		is_valid_solution = other.is_valid_solution;
 	}
 	std::cout << "SolutionState: move assignment" << std::endl;
 	return *this;
@@ -393,6 +397,11 @@ bool SolutionState::is_valid()
 std::vector<Val> SolutionState::getSolution()
 {
 	return this->current_assignment;
+}
+
+int SolutionState::getHowManyXVars() const
+{
+	return how_many_x_vars;
 }
 
 bool SolutionState::isEmpty()

@@ -97,6 +97,10 @@ private:
     /// @brief getter for the current solution
     /// @return 
     std::vector<Val> getSolution();
+
+    /// @brief getter for the number of x variables
+    /// @return 
+    int getHowManyXVars() const;
     
     /// @brief returns true if the matrix is empty
     /// @return 
