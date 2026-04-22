@@ -76,7 +76,7 @@ std::optional<SolutionState> bcp(SolutionState f, int upperbound)
     {
         if (f.cost() < upperbound)
         {
-            upperbound = f.cost();
+            // upperbound = f.cost();
             return f;
         }
         else
@@ -188,25 +188,9 @@ int main(int argc, char **argv)
 
     std::string filename = argv[1];
 
-    SolutionState f(filename);
+    // test(f ilename);
 
-    // test_lower_bound(filename); // and reduce because it's called in here too.
-
-    // test_reduce(filename);
-
-    // test_reduce("h.txt");
-
-    std::optional<SolutionState> f_solution = bcp(f, f.getHowManyXVars() + 1);
-
-    if (f_solution)
-    {
-        std::cout << "solution exists" << std::endl;
-        f_solution->printSolution();
-    }
-    else
-    {
-        std::cout << "no solution" << std::endl;
-    }
+    test("book_example_8.2.1.txt");
 
     // std::vector<Val> bestcover = bcp(test_mis);
     return 0;
@@ -244,6 +228,31 @@ bool isInfeasible(SolutionState &f)
         }
     }
     return false;
+}
+
+/// @brief this function reads 'filename' and runs our bcp covering algorithm with it
+/// @param filename 
+void test(std::string filename)
+{
+    SolutionState f(filename);
+
+    // test_lower_bound(filename); // and reduce because it's called in here too.
+
+    // test_reduce(filename);
+
+    // test_reduce("h.txt");
+
+    std::optional<SolutionState> f_solution = bcp(f, f.getHowManyXVars() + 1);
+
+    if (f_solution)
+    {
+        std::cout << "solution exists" << std::endl;
+        f_solution->printSolution();
+    }
+    else
+    {
+        std::cout << "no solution" << std::endl;
+    }
 }
 
 /// @brief returns the lowest cost solution, or nullopt if neither branch has a solution
