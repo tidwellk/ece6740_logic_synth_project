@@ -175,6 +175,28 @@ void test_lower_bound(std::string filename)
     a.printSolution();
 }
 
+void test_choose_var(std::string filename, int expected_column)
+{
+    SolutionState f(filename);
+
+    std::cout << "Testing choose_var() with file: " << filename << std::endl;
+    f.printMatrix();
+
+    int chosen_column = f.choose_var();
+
+    std::cout << "Expected column index: " << expected_column << std::endl;
+    std::cout << "Actual column index:   " << chosen_column << std::endl;
+
+    if (chosen_column == expected_column)
+    {
+        std::cout << "PASS: choose_var() returned the expected column." << std::endl;
+    }
+    else
+    {
+        std::cout << "FAIL: choose_var() did not return the expected column." << std::endl;
+    }
+}
+
 int main(int argc, char **argv)
 {
     std::cout << "main()" << std::endl;
@@ -241,6 +263,11 @@ void test(std::string filename)
     // test_reduce(filename);
 
     // test_reduce("h.txt");
+
+    test_choose_var("test_choose_var_shortrow.txt", 1);
+    test_choose_var("test_choose_var_binate.txt", 2);
+    test_choose_var("test_choose_var_balance.txt", 1);
+    test_choose_var("test_choose_var_total_and_balance.txt", 3);
 
     std::optional<SolutionState> f_solution = bcp(f, f.getHowManyXVars() + 1);
 
