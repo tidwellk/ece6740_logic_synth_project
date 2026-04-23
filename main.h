@@ -13,6 +13,8 @@ std::optional<SolutionState> bcp(SolutionState a, int upperbound);
 
 void test_reduce(std::string filename);
 
+void test_choose_var(std::string filename, int expected_column);
+
 bool isInfeasible(SolutionState &f);
 
 void test(std::string filename);
