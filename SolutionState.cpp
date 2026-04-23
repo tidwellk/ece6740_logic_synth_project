@@ -768,9 +768,107 @@ bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assi
 	return true;
 }
 
-/// @brief choose the best variable to do the branching with. might need to calculate the row/column weights
-/// @return
+/// @brief Chooses the branching variable by scoring columns based on short-row coverage,
+/// binate occurrence, polarity balance, and total appearances in the current matrix.
+/// @return column number of the variable to assign, or -1 if the matrix is empty (no variable to choose).
 int SolutionState::choose_var()
 {
-	return 0;
+	// If the matrix is empty, return -1 to indicate no variable to choose since 0 would be a valid column index.
+	if (matrix.empty() || matrix[0].empty())
+	{
+		return -1;
+	}
+
+	// Scoring variables based on the selection heuristic to choose the best branching variable.
+	int best_col = 0;
+	int best_score = -1;
+	int best_short_row_score = -1;
+	int best_binate_bonus = -1;
+	int best_balance_bonus = -1;
+	int best_total_appearances = -1;
+
+	// Iterate through each column to calculate its score based on the defined heuristic.
+	for (int col = 0; col < (int)matrix[0].size(); col++)
+	{
+		int short_row_score = 0;
+		int pos_count = 0;
+		int neg_count = 0;
+
+		// Evaluate the column by iterating through each row and counting the occurrences of 1s, 0s, and DCs.
+		for (const auto &row : matrix)
+		{
+			// Skip DC entries since they do not contribute to the score and do not affect dominance or essentiality.
+			if (row[col] == DC)
+			{
+				continue;
+			}
+
+			// Count the number of literals in the row (non-DC entries) to determine if it's a short row.
+			int row_literals = 0;
+			for (Val entry : row)
+			{
+				if (entry != DC)
+				{
+					row_literals++;
+				}
+			}
+
+			// Short rows are more valuable to cover, so we give them a higher score. 
+			// This encourages the algorithm to cover short rows early, which can lead to faster reductions in the matrix size.
+			// The scoring is exponential for very short rows to prioritize them even more, while longer rows get a smaller incremental score.
+			// The scoring criteria here is purely heuristic and can be adjusted based on testing and performance observations.
+			if (row_literals <= 2)
+			{
+				short_row_score += 100;
+			}
+			else if (row_literals == 3)
+			{
+				short_row_score += 30;
+			}
+			else if (row_literals == 4)
+			{
+				short_row_score += 10;
+			}
+			else
+			{
+				short_row_score += 1;
+			}
+
+			// Count the number of positive and negative occurrences of the variable in the column.
+			if (row[col] == ONE)
+			{
+				pos_count++;
+			}
+			else if (row[col] == ZERO)
+			{
+				neg_count++;
+			}
+		}
+
+		// Calculate the total score for the column based on the short row score, binate bonus, balance bonus, and total appearances.
+		int total_appearances = pos_count + neg_count;
+		int binate_bonus = (pos_count > 0 && neg_count > 0) ? 50 : 0;
+		int balance_bonus = std::min(pos_count, neg_count) * 5;
+		int score = short_row_score + binate_bonus + balance_bonus + total_appearances;
+
+		// Update the best column if the current column has a higher score than the best score found so far.
+		// The tie-breaking criteria prioritize columns that cover more short rows, have a binate occurrence, 
+		// and have a better balance of positive and negative literals in that order, followed by total appearances as a final tiebreaker.
+		if (score > best_score ||
+			(score == best_score && short_row_score > best_short_row_score) ||
+			(score == best_score && short_row_score == best_short_row_score && binate_bonus > best_binate_bonus) ||
+			(score == best_score && short_row_score == best_short_row_score && binate_bonus == best_binate_bonus && balance_bonus > best_balance_bonus) ||
+			(score == best_score && short_row_score == best_short_row_score && binate_bonus == best_binate_bonus && balance_bonus == best_balance_bonus && total_appearances > best_total_appearances))
+		{
+			best_col = col;
+			best_score = score;
+			best_short_row_score = short_row_score;
+			best_binate_bonus = binate_bonus;
+			best_balance_bonus = balance_bonus;
+			best_total_appearances = total_appearances;
+		}
+	}
+
+	return best_col;
 }
+
