@@ -11,6 +11,9 @@ $(TARGET): $(OBJS)
 run: $(TARGET)
 	./$(TARGET) f.txt
 
+test: $(TARGET)
+	for file in *.txt; do ./$(TARGET) "$$file"; done
+
 main.o: main.cpp SolutionState.h Val.h main.h
 	$(CXX) $(CXXFLAGS) -c main.cpp
 
@@ -20,4 +23,4 @@ SolutionState.o: SolutionState.cpp SolutionState.h Val.h
 clean:
 	rm -fv $(TARGET) *.o
 
-.PHONY: all run clean
+.PHONY: all run test clean

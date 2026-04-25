@@ -68,9 +68,14 @@ std::optional<SolutionState> bcp(SolutionState f, int upperbound)
 8   return BEST_SOLUTION(S1, SO)
     }
     */
-
+    // f.printMatrix();
+    // f.printSolution();
+    
     f.reduce();
-
+    
+    // f.printMatrix();
+    // f.printSolution();
+    
     // RECURSIVE BASE CASES
     if (f.isEmpty())
     {
@@ -108,8 +113,7 @@ std::optional<SolutionState> bcp(SolutionState f, int upperbound)
     */
     int chosen_column = f.choose_var();
     /*
-     // TODO
-     then we could make a copy of f, so S1 = f AND assign_var(xi = 1).
+     then we make a copy of f, so S1 = f AND assign_var(xi = 1).
      S1 = f    uses the copy constructor to do a deep copy
      S1.assign_var()
      */
@@ -199,7 +203,7 @@ void test_choose_var(std::string filename, int expected_column)
 
 int main(int argc, char **argv)
 {
-    std::cout << "main()" << std::endl;
+    // std::cout << "main()" << std::endl;
 
     if (argc < 2)
     {
@@ -210,11 +214,8 @@ int main(int argc, char **argv)
 
     std::string filename = argv[1];
 
-    // test(f ilename);
+    test(filename);
 
-    test("book_example_8.2.1.txt");
-
-    // std::vector<Val> bestcover = bcp(test_mis);
     return 0;
 }
 
@@ -256,6 +257,8 @@ bool isInfeasible(SolutionState &f)
 /// @param filename 
 void test(std::string filename)
 {
+    std::cout << std::endl;
+
     SolutionState f(filename);
 
     // test_lower_bound(filename); // and reduce because it's called in here too.
@@ -264,12 +267,14 @@ void test(std::string filename)
 
     // test_reduce("h.txt");
 
-    test_choose_var("test_choose_var_shortrow.txt", 1);
-    test_choose_var("test_choose_var_binate.txt", 2);
-    test_choose_var("test_choose_var_balance.txt", 1);
-    test_choose_var("test_choose_var_total_and_balance.txt", 3);
+    // test_choose_var("test_choose_var_shortrow.txt", 1);
+    // test_choose_var("test_choose_var_binate.txt", 2);
+    // test_choose_var("test_choose_var_balance.txt", 1);
+    // test_choose_var("test_choose_var_total_and_balance.txt", 3);
 
     std::optional<SolutionState> f_solution = bcp(f, f.getHowManyXVars() + 1);
+
+    std::cout << filename << "\t";
 
     if (f_solution)
     {

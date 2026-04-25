@@ -4,7 +4,7 @@
 SolutionState::SolutionState()
 	: is_valid_solution(true)
 {
-	std::cout << "SolutionState: default constructor" << std::endl;
+	// std::cout << "SolutionState: default constructor" << std::endl;
 }
 
 /// @brief This constructor reads a text file into the object.
@@ -19,8 +19,8 @@ SolutionState::SolutionState(std::string filename)
 	}
 
 	// now we know how many columns to have in the matrix
-	std::cout << "we have " << how_many_x_vars << " x variables\n"
-			  << std::endl;
+	// std::cout << "we have " << how_many_x_vars << " x variables\n"
+			//   << std::endl;
 
 	populate_colnames_array();
 
@@ -29,7 +29,7 @@ SolutionState::SolutionState(std::string filename)
 
 /// @brief destructor
 SolutionState::~SolutionState()
-{
+{ 
 	// std::cout << "SolutionState: destructor" << std::endl;
 }
 
@@ -45,7 +45,7 @@ SolutionState::SolutionState(const SolutionState &other)
 	  forced_solution(other.forced_solution),
 	  is_valid_solution(other.is_valid_solution)
 {
-	std::cout << "SolutionState: copy constructor" << std::endl;
+	// std::cout << "SolutionState: copy constructor" << std::endl;
 }
 
 SolutionState::SolutionState(SolutionState &&other) noexcept
@@ -58,7 +58,7 @@ SolutionState::SolutionState(SolutionState &&other) noexcept
 	  forced_solution(std::move(other.forced_solution)),
 	  is_valid_solution(other.is_valid_solution)
 {
-	std::cout << "SolutionState: move constructor" << std::endl;
+	// std::cout << "SolutionState: move constructor" << std::endl;
 }
 
 SolutionState &SolutionState::operator=(const SolutionState &other)
@@ -74,7 +74,7 @@ SolutionState &SolutionState::operator=(const SolutionState &other)
 		current_assignment = other.current_assignment;
 		is_valid_solution = other.is_valid_solution;
 	}
-	std::cout << "SolutionState: copy assignment" << std::endl;
+	// std::cout << "SolutionState: copy assignment" << std::endl;
 	return *this;
 }
 
@@ -158,6 +158,12 @@ bool SolutionState::readInputFile_isOK(std::string filename)
 	std::ifstream infile(filename);
 	std::string line;
 
+	if (!infile.is_open())
+	{
+		std::cerr << "Could not open input file: " << filename << "\n";
+		return false;
+	}
+
 	while (std::getline(infile, line))
 	{
 		std::stringstream ss(line);
@@ -166,7 +172,16 @@ bool SolutionState::readInputFile_isOK(std::string filename)
 
 		while (ss >> token)
 		{
-			int var_number = std::stoi(token.substr(1));
+			int var_index;
+			Val value;
+
+			if (!parse_literal(token, var_index, value))
+			{
+				std::cerr << "Bad token \"" << token << "\" while scanning " << filename << "\n";
+				return false;
+			}
+
+			int var_number = var_index + 1;
 			if (var_number > how_many_x_vars)
 			{
 				how_many_x_vars = var_number;
@@ -244,7 +259,7 @@ void SolutionState::remove_essential_rows()
 {
 	while (find_essential_row() == true)
 	{
-		std::cout << "found essential row" << std::endl;
+		// std::cout << "found essential row" << std::endl;
 		// printSolution();
 		// printMatrix();
 	}
@@ -351,19 +366,19 @@ void SolutionState::reduce()
 
 	do
 	{
-		std::cout << "matrix state at start of reduce() loop" << std::endl;
+		// std::cout << "matrix state at start of reduce() loop" << std::endl;
 
-		printMatrix();
-		printSolution();
+		// printMatrix();
+		// printSolution();
 
 		a_prime = *this;
 
 		remove_essential_rows();
-		printMatrix();
-		printSolution();
+		// printMatrix();
+		// printSolution();
 		remove_dominating_rows();
-		printMatrix();
-		printSolution();
+		// printMatrix();
+		// printSolution();
 		remove_dominated_columns();
 
 	} while (!matrix.empty() &&
@@ -563,6 +578,11 @@ void SolutionState::remove_dominated_columns()
 {
 	// std::set<int, std::greater<int>> cols_to_remove;
 
+	if (matrix.empty() || matrix[0].empty())
+	{
+		return;
+	}
+
 	uint rowCount = matrix.size();
 	uint colCount = matrix[0].size();
 
@@ -649,9 +669,7 @@ bool SolutionState::find_essential_row()
 
 		if (howManyAssigned == 1)
 		{
-			assign_a_variable(colNumber, assignedVal, ESSENTIAL);
-
-			return true;
+			return assign_a_variable(colNumber, assignedVal, ESSENTIAL);
 		}
 	}
 	return false;
@@ -871,4 +889,3 @@ int SolutionState::choose_var()
 
 	return best_col;
 }
-
