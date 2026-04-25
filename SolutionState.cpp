@@ -439,35 +439,35 @@ int SolutionState::lower_bound() const
 	{
 		// Calculate the cost of implementing each row as part of the solution.
 		int min_row = -1;
-		int min_row_cost = -1;
+		int min_row_ones = -1;
 		for (int i = 0; i < (int)matrix_copy.size(); i++) // size is the number of rows
 		{
-			int current_row_cost = 0;
+			int current_row_ones = 0;
 			for (Val column_entry : matrix_copy[i])
 			{
 				// Skip the row if it contains a 0 since it cannot be part of the solution.
 				if (column_entry == ZERO)
 				{
-					current_row_cost = -1;
+					current_row_ones = -1;
 					break;
 				}
 				// Otherwise add its cost if it's implemented at the row.
 				else if (column_entry == ONE)
 				{
-					current_row_cost++;
+					current_row_ones++;
 				}
 			}
-			if (min_row_cost == -1 || (current_row_cost != -1 && current_row_cost < min_row_cost))
+			if (min_row_ones == -1 || (current_row_ones != -1 && current_row_ones < min_row_ones))
 			{
-				min_row_cost = current_row_cost;
+				min_row_ones = current_row_ones;
 				min_row = i;
 			}
 		}
 
 		// If all remaining rows have zeros we can stop here.
-		if(min_row_cost == -1)
+		if(min_row_ones == -1)
 		{
-			min_row_cost = 0;
+			min_row_ones = 0;
 			break;
 		}
 
@@ -483,7 +483,7 @@ int SolutionState::lower_bound() const
 		}
 
 		// then add its cost,
-		matrix_cost += min_row_cost;
+		matrix_cost += (bool) min_row_ones;
 
 		// Remove it from the mutable copy of the original matrix,
 		matrix_copy.erase(matrix_copy.begin() + min_row);
