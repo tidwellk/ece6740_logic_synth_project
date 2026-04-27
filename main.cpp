@@ -40,42 +40,8 @@ One subtle point: if another row has the same variable with the same polarity, i
 
 std::optional<SolutionState> bcp(SolutionState f, int upperbound)
 {
-    /* pseudocode from textbook page 336
-
-    BCP(F, U, currentSol)
-    {
-1   (F, currentSol) = REDUCE(F, currentSol)
-    if (terminalCase(F))
-    {
-        if (F != empty and COST( currentSol) < U)
-        {
-            U = COST( currentSol)
-2           return ( currentSol)
-        }
-3       else return ("no solution")
-    }
-
-4   L = LOWER_BOUND{F, currentSol)
-      if (L >= U) return ("no solution")
-
-5   Xi = CHOOSE_VAR(F)
-
-6   S 1 = BCP(Fx, U, currentSol UNION {xi})
-
-7   if (cost(S1) = L) return (S1)
-    S 0 = BCP(Fxi, U, currentSol)
-
-8   return BEST_SOLUTION(S1, SO)
-    }
-    */
-    // f.printMatrix();
-    // f.printSolution();
-    
     f.reduce();
-    
-    // f.printMatrix();
-    // f.printSolution();
-    
+
     // RECURSIVE BASE CASES
     if (f.isEmpty())
     {
@@ -96,7 +62,6 @@ std::optional<SolutionState> bcp(SolutionState f, int upperbound)
     }
 
     // RECURSIVE CALLS
-
     int lowerbound = f.lower_bound();
 
     if (lowerbound >= upperbound)
@@ -105,18 +70,7 @@ std::optional<SolutionState> bcp(SolutionState f, int upperbound)
         return std::nullopt;
     }
 
-    // at this point we need to branch
-    /*
-    // TODO
-    the pseudocode says xi = choose_var(f). maybe choose_var could be a public function in the class because
-        it really depends on the current state.
-    */
     int chosen_column = f.choose_var();
-    /*
-     then we make a copy of f, so S1 = f AND assign_var(xi = 1).
-     S1 = f    uses the copy constructor to do a deep copy
-     S1.assign_var()
-     */
     SolutionState s1 = f;
 
     std::optional<SolutionState> s1opt;
@@ -261,17 +215,6 @@ void test(std::string filename)
 
     SolutionState f(filename);
 
-    // test_lower_bound(filename); // and reduce because it's called in here too.
-
-    // test_reduce(filename);
-
-    // test_reduce("h.txt");
-
-    // test_choose_var("test_choose_var_shortrow.txt", 1);
-    // test_choose_var("test_choose_var_binate.txt", 2);
-    // test_choose_var("test_choose_var_balance.txt", 1);
-    // test_choose_var("test_choose_var_total_and_balance.txt", 3);
-
     std::optional<SolutionState> f_solution = bcp(f, f.getHowManyXVars() + 1);
 
     std::cout << filename << "\t";
@@ -293,6 +236,11 @@ void test(std::string filename)
 /// @return
 std::optional<SolutionState> best_solution(std::optional<SolutionState> s1, std::optional<SolutionState> s0)
 {
+    if (!s1 && !s0)
+    {
+        return std::nullopt;
+    }
+
     if (!s1)
     {
         return s0;
@@ -307,5 +255,6 @@ std::optional<SolutionState> best_solution(std::optional<SolutionState> s1, std:
     {
         return s1;
     }
+    
     return s0;
 }
