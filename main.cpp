@@ -157,17 +157,20 @@ void test_choose_var(std::string filename, int expected_column)
 
 int main(int argc, char **argv)
 {
-    // std::cout << "main()" << std::endl;
-
     if (argc < 2)
     {
-        std::cout << "You need to run the command with a filename: ./main.out f.txt" << std::endl;
-        std::cout << "f.txt is one clause per line, each literal separated by spaces" << std::endl;
+        std::cout << "You need to run the command with a filename, for example:" << std::endl;
+        std::cout << "./main.out examples/f.txt" << std::endl;
+        std::cout << "Each input file should contain one clause per line with space-separated literals." << std::endl;
         return 1;
     }
 
     std::string filename = argv[1];
 
+    // Default submission behavior: run the full BCP solver on the provided input file.
+    // Temporary helper tests such as test_reduce(), test_lower_bound(), and
+    // test_choose_var() are kept in this file to match the team's current
+    // development workflow and can be called here when debugging individual steps.
     test(filename);
 
     return 0;

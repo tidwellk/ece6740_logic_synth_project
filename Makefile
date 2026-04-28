@@ -9,10 +9,10 @@ $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS)
 
 run: $(TARGET)
-	./$(TARGET) f.txt
+	./$(TARGET) examples/f.txt
 
 test: $(TARGET)
-	for file in *.txt; do ./$(TARGET) "$$file"; done
+	for file in examples/*.txt; do ./$(TARGET) "$$file"; done
 
 main.o: main.cpp SolutionState.h Val.h main.h
 	$(CXX) $(CXXFLAGS) -c main.cpp
