@@ -33,8 +33,6 @@ SolutionState::~SolutionState()
 	// std::cout << "SolutionState: destructor" << std::endl;
 }
 
-/// @brief rule of 5 stuff auto generated from gpt
-/// @param other
 SolutionState::SolutionState(const SolutionState &other)
 	: matrix(other.matrix),
 	  rownames(other.rownames),
@@ -716,23 +714,24 @@ void SolutionState::remove_column(int column_number)
 		current_column_to_colnames_idx.begin() + column_number);
 }
 
-/// @brief Description from gpt:
-/// You need two different operations
-/// 1. Forced assignment (essential rows)
 
-/// update solution
-/// remove rows with matching value
-/// remove column
 
-/// 2. Column dominance
-
-/// DO NOT commit to solution yet
-/// remove rows where column == 0
-/// remove the column
+/// 	You need two different operations
+/// 	1. Forced assignment (essential rows)
+/// 		update solution
+/// 		remove rows with matching value
+/// 		remove column
+/// 	2. Column dominance (not essential, just pruning)
+/// 		DO NOT commit to solution yet
+/// 		remove rows where column == 0
+/// 		remove the column
+///
+/// Returns false and marks the state invalid if a contradictory forced assignment is detected.
 /// @param current_column_number
 /// @param val_to_assign
 /// @param isForcedEssential
-/// @return
+/// @return false if we find a contradiction in the solution, true otherwise. it will mark the solution as invalid if we find a contradiction, so you can check that with is_valid() after calling this function. the contradiction can be either in the forced_solution or in the current_assignment depending on whether this is an essential row assignment or a column dominance assignment.
+/// @brief Assigns val_to_assign to the variable at current_column_number.
 bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assign, bool isForcedEssential)
 {
 	int actual_var_column = current_column_to_colnames_idx[current_column_number];

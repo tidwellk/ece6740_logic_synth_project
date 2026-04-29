@@ -1,43 +1,60 @@
 #include "main.h"
-
 /*
-When you find an essential row, what you really found is a forced variable assignment, not merely “a row to delete.”
+    
 
-So after adding that row’s literal or clause name to the solution, the next question is:
+    In your matrix representation, that means the entry in that column becomes "--" for those remaining rows.
 
-what rows are now satisfied by that forced assignment?
+    So the full mental model is:
 
-Those rows should be removed too.
+    1. find essential row
+    2. extract the forced assignment (variable, value)
+    3. add that assignment to the solution
+    4. remove all rows satisfied by that assignment
+    5. in all remaining rows, erase that variable’s column information
+    6. if any row becomes all "--", that is a contradiction for that branch
+    7. continue reduction loop
 
-For example, if the essential row forces:
+    So you need to check other rows with the same variable.
 
-x1=1
+    The essential row is just the clue that tells you the assignment is forced. The action applies to the whole matrix.
 
-then every row containing 1 in column x1 is satisfied and can be removed, not only the single essential row.
+    One subtle point: if another row has the same variable with the same polarity, it gets removed as satisfied. If it has the opposite polarity, it is not removed automatically — it just loses that literal and may become smaller, maybe even essential itself.
+*/
 
-Then there is a second effect:
-
-rows containing the opposite polarity in that same column are not satisfied
-but that literal is now impossible, so that entry should be removed from those rows
-
-In your matrix representation, that means the entry in that column becomes -- for those remaining rows.
-
-So the full mental model is:
-
-find essential row
-extract the forced assignment (variable, value)
-add that assignment to the solution
-remove all rows satisfied by that assignment
-in all remaining rows, erase that variable’s column information
-if any row becomes all --, that is a contradiction for that branch
-continue reduction loop
-
-So yes, you absolutely do need to check other rows with the same variable. That is the important part.
-
-The essential row is just the clue that tells you the assignment is forced. The action applies to the whole matrix.
-
-One subtle point: if another row has the same variable with the same polarity, it gets removed as satisfied. If it has the opposite polarity, it is not removed automatically — it just loses that literal and may become smaller, maybe even essential itself.*/
-
+/**
+ * @brief Branch-and-bound Boolean covering solver. Branches on xi=1 then xi=0,
+ *        pruning when lower_bound() >= upperbound.
+ *          
+ *  When you find an essential row, what you really found is a forced variable assignment, not merely “a row to delete.”
+ *  So after adding that row’s literal or clause name to the solution, the next question is:
+ *  what rows are now satisfied by that forced assignment?
+ *  Those rows should be removed too.
+ *
+ * For example, if the essential row forces:
+ *    x1=1
+ *    then every row containing 1 in column x1 is satisfied and can be removed, not only the single essential row.
+ *
+ *    Then there is a second effect:
+ *    rows containing the opposite polarity in that same column are not satisfied
+ *    but that literal is now impossible, so that entry should be removed from those rows
+ *
+ * @details Essential row reduction works as follows:
+ *   1. Find an essential row (exactly one non-DC literal).
+ *   2. Extract the forced assignment (variable, value).
+ *   3. Add that assignment to the solution.
+ *   4. Remove all rows satisfied by that assignment.
+ *   5. Erase that variable’s column from all remaining rows.
+ *   6. If any row becomes all DC, the branch is infeasible.
+ *   7. Repeat until no essential rows remain.
+ *
+ * @note A row with the same variable and same polarity is removed as covered.
+ *       A row with the opposite polarity is not removed — it loses that literal
+ *       and may itself become essential on the next pass.
+ *
+ * @param f          The current covering problem state.
+ * @param upperbound Cost threshold; solutions at or above this are pruned. Pre: upperbound > 0.
+ * @return Lowest-cost solution with cost < upperbound, or nullopt if none exists.
+ */
 std::optional<SolutionState> bcp(SolutionState f, int upperbound)
 {
     f.reduce();
