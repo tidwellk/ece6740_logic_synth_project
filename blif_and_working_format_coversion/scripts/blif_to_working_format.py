@@ -451,6 +451,22 @@ def negate_expression(expression):
     raise ValueError(f"Unknown expression kind: {kind}")
 
 
+"""Rename all literals in an expression tree using a mapping dict."""
+def rename_expression(expression, rename_map):
+    kind = expression[0]
+
+    if kind == "lit":
+        literal = expression[1]
+        if literal.endswith("'"):
+            base = literal[:-1]
+            return ("lit", rename_map.get(base, base) + "'")
+        else:
+            return ("lit", rename_map.get(literal, literal))
+
+    children = [rename_expression(child, rename_map) for child in expression[1]]
+    return (kind, children)
+
+
 """Command-line entry point."""
 def main():
 
@@ -473,6 +489,10 @@ def main():
     # Expand target recursively into primary-input-only factored form
     memo = {}
     expanded_signal = expand_signal(target_function, local_expression_form, set(primary_inputs), memo)
+
+    # Rename variables from original names (a, b, ...) to x1, x2, ...
+    rename_map = {name: f"x{i+1}" for i, name in enumerate(primary_inputs)}
+    expanded_signal = rename_expression(expanded_signal, rename_map)
 
     # Convert final expression into one factor per line
     lines = expression_to_factor_lines(expanded_signal)

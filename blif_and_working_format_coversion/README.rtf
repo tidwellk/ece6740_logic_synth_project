@@ -19,6 +19,15 @@ The work flow goes like:
 3. Feed the simplified blif to the "blif_to_working_format.py" script
     python3 scripts/blif_to_working_format.py path/to/simplified.blif path/to/working/format.txt
 
+    if you wish to verify correctness, you can use the working_format_to_blif.py script using:
+        python3 scripts/working_format_to_blif.py outputs/f_working.txt outputs/f_back_to.blif
+    to convert it back to a blif file. Then you can use the abc_cec.sh script to check equivalence in abc using:
+        i. chmod +x scripts/abc_cec.sh (if needed)
+        ii. ./scripts/abc_cec path/to/unsimplified.blif path/to/result.blif
+        iii. Note that if there was a floating/redundant input like with this f_unsimplified.blif example,
+            the eliminated input makes the script say the two are not equivalent.
+            But if you make the input ports the same then they will be again.
+
 4. Feed the working format file to C++ program that does the covering problem
     The top-level README.md gives instructions on how to run the project.
     For a short test, you can just do:
@@ -26,17 +35,8 @@ The work flow goes like:
      - make
      - ./main.out examples/f.txt
     you can swap examples/f.txt to the path to any of the .txt files in the "examples" or "tests" folders.
-
-
-5. Feed the C++ result file to a working_format_to_blif script
-    python3 scripts/working_format_to_blif.py outputs/f_working.txt outputs/f_back_to.blif
-
-6. Verify equivalence in abc.
-    1. chmod +x scripts/abc_cec.sh (if needed)
-    2. ./scripts/abc_cec path/to/unsimplified.blif path/to/result.blif
-    3. Note that if there was a floating/redundant input like with this f_unsimplified.blif example,
-        the eliminated input makes the script say the two are not equivalent.
-        But if you make the input ports the same then they will be again.
     
 Before fully understanding the problem at hand, we worked on implementing a blif to SoP and factored expression converter. This ended up
 not being used at all in the final implementation of the project, but these files have been kept for record keeping.
+
+
