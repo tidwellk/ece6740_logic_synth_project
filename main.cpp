@@ -1,59 +1,10 @@
 #include "main.h"
-/*
-    
-
-    In your matrix representation, that means the entry in that column becomes "--" for those remaining rows.
-
-    So the full mental model is:
-
-    1. find essential row
-    2. extract the forced assignment (variable, value)
-    3. add that assignment to the solution
-    4. remove all rows satisfied by that assignment
-    5. in all remaining rows, erase that variable’s column information
-    6. if any row becomes all "--", that is a contradiction for that branch
-    7. continue reduction loop
-
-    So you need to check other rows with the same variable.
-
-    The essential row is just the clue that tells you the assignment is forced. The action applies to the whole matrix.
-
-    One subtle point: if another row has the same variable with the same polarity, it gets removed as satisfied. If it has the opposite polarity, it is not removed automatically — it just loses that literal and may become smaller, maybe even essential itself.
-*/
 
 /**
- * @brief Branch-and-bound Boolean covering solver. Branches on xi=1 then xi=0,
- *        pruning when lower_bound() >= upperbound.
- *          
- *  When you find an essential row, what you really found is a forced variable assignment, not merely “a row to delete.”
- *  So after adding that row’s literal or clause name to the solution, the next question is:
- *  what rows are now satisfied by that forced assignment?
- *  Those rows should be removed too.
- *
- * For example, if the essential row forces:
- *    x1=1
- *    then every row containing 1 in column x1 is satisfied and can be removed, not only the single essential row.
- *
- *    Then there is a second effect:
- *    rows containing the opposite polarity in that same column are not satisfied
- *    but that literal is now impossible, so that entry should be removed from those rows
- *
- * @details Essential row reduction works as follows:
- *   1. Find an essential row (exactly one non-DC literal).
- *   2. Extract the forced assignment (variable, value).
- *   3. Add that assignment to the solution.
- *   4. Remove all rows satisfied by that assignment.
- *   5. Erase that variable’s column from all remaining rows.
- *   6. If any row becomes all DC, the branch is infeasible.
- *   7. Repeat until no essential rows remain.
- *
- * @note A row with the same variable and same polarity is removed as covered.
- *       A row with the opposite polarity is not removed — it loses that literal
- *       and may itself become essential on the next pass.
- *
- * @param f          The current covering problem state.
- * @param upperbound Cost threshold; solutions at or above this are pruned. Pre: upperbound > 0.
- * @return Lowest-cost solution with cost < upperbound, or nullopt if none exists.
+ * @brief Solves a covering problem state using recursive branch-and-bound.
+ * @param f Current covering problem state.
+ * @param upperbound Cost threshold used for pruning.
+ * @return The best solution below upperbound, or nullopt if none exists.
  */
 std::optional<SolutionState> bcp(SolutionState f, int upperbound)
 {
@@ -88,6 +39,11 @@ std::optional<SolutionState> bcp(SolutionState f, int upperbound)
     }
 
     int chosen_column = f.choose_var();
+    if (chosen_column < 0)
+    {
+        return std::nullopt;
+    }
+
     SolutionState s1 = f;
 
     std::optional<SolutionState> s1opt;
@@ -127,6 +83,8 @@ std::optional<SolutionState> bcp(SolutionState f, int upperbound)
     return best_solution(s1opt, s0opt);
 }
 
+/// @brief Debug helper that prints a matrix before and after one full reduce() call.
+/// @param filename Input covering problem file.
 void test_reduce(std::string filename)
 {
     SolutionState a(filename);
@@ -139,7 +97,8 @@ void test_reduce(std::string filename)
 }
 
 /**
- * Temporary test function.
+ * @brief Debug helper that prints the lower bound before and after reduction.
+ * @param filename Input covering problem file.
  */
 void test_lower_bound(std::string filename)
 {
@@ -150,6 +109,9 @@ void test_lower_bound(std::string filename)
     a.printSolution();
 }
 
+/// @brief Debug helper for validating choose_var() on a file with a known expected column.
+/// @param filename Input covering problem file.
+/// @param expected_column Expected reduced-matrix column index.
 void test_choose_var(std::string filename, int expected_column)
 {
     SolutionState f(filename);
@@ -172,6 +134,10 @@ void test_choose_var(std::string filename, int expected_column)
     }
 }
 
+/// @brief Program entry point for running the solver on a single input file.
+/// @param argc Number of command-line arguments.
+/// @param argv Command-line argument array. argv[1] is the input filename.
+/// @return 0 on success, or 1 when no input file is provided.
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -193,11 +159,9 @@ int main(int argc, char **argv)
     return 0;
 }
 
-/// @brief check if we have a valid solution. it is invalid if we have a conflicting assignment of essential variables
-///         (this boolean is changed in the assignment function)
-///         or if we have a row of all DC don't cares
-/// @param f
-/// @return
+/// @brief Returns true if the current state cannot lead to a valid solution.
+/// @param f Current covering problem state.
+/// @return True when assignments conflict or a row contains only don't-cares.
 bool isInfeasible(SolutionState &f)
 {
     // check for conflicting assignments in the solution
@@ -227,8 +191,8 @@ bool isInfeasible(SolutionState &f)
     return false;
 }
 
-/// @brief this function reads 'filename' and runs our bcp covering algorithm with it
-/// @param filename 
+/// @brief Runs the full BCP solver on a file and prints the result.
+/// @param filename Input covering problem file.
 void test(std::string filename)
 {
     std::cout << std::endl;
@@ -250,10 +214,10 @@ void test(std::string filename)
     }
 }
 
-/// @brief returns the lowest cost solution, or nullopt if neither branch has a solution
-/// @param s1
-/// @param s0
-/// @return
+/// @brief Chooses the lower-cost solution from two recursive branch results.
+/// @param s1 Solution from the x=1 branch, if one exists.
+/// @param s0 Solution from the x=0 branch, if one exists.
+/// @return The lower-cost solution, or nullopt if neither branch succeeds.
 std::optional<SolutionState> best_solution(std::optional<SolutionState> s1, std::optional<SolutionState> s0)
 {
     if (!s1 && !s0)

@@ -81,33 +81,53 @@ private:
     // Erases column_number from every row vector and updates current_column_to_colnames_idx.
     void remove_column(int column_number);
 
-    
     public:
-    /// @brief default constructor
+    /// @brief Constructs an empty solution state.
     SolutionState();
+
+    /// @brief Constructs a solution state by reading a covering problem from a file.
+    /// @param filename Input covering problem file.
     SolutionState(std::string filename);
-    /// @brief destructor
+
+    /// @brief Destroys the solution state.
     ~SolutionState();
     
-    /// Rule of five: copy / move
+    /// @brief Copy-constructs a solution state.
+    /// @param other Source state to copy.
     SolutionState(const SolutionState &other);
+
+    /// @brief Move-constructs a solution state.
+    /// @param other Source state to move from.
     SolutionState(SolutionState &&other) noexcept;
+
+    /// @brief Copy-assigns a solution state.
+    /// @param other Source state to copy.
+    /// @return Reference to this object after assignment.
     SolutionState &operator=(const SolutionState &other);
+
+    /// @brief Move-assigns a solution state.
+    /// @param other Source state to move from.
+    /// @return Reference to this object after assignment.
     SolutionState &operator=(SolutionState &&other) noexcept;
     
-    /// override == operator
+    /// @brief Compares two states for matrix equality.
+    /// @param other State to compare against.
+    /// @return True if the matrices are identical.
     bool operator==(const SolutionState &other) const;
     
+    /// @brief Compares two states for matrix inequality.
+    /// @param other State to compare against.
+    /// @return True if the matrices differ.
     bool operator!=(const SolutionState &other) const;
     
-    /// @brief prints the current matrix cover
+    /// @brief Prints the current matrix cover in tabular form.
     void printMatrix();
     
-    /// @brief print the current solution
+    /// @brief Prints the current forced and branch assignments.
     void printSolution();
     
-    /// @brief getter for the matrix data structure
-    /// @return 
+    /// @brief Returns the current matrix representation.
+    /// @return Copy of the current matrix.
     std::vector<std::vector<Val>> getMatrix();
     
     /// @brief Applies essential-row, dominating-row, and dominated-column reductions
@@ -136,6 +156,9 @@ private:
 
     /// @brief Assigns val_to_assign to the variable at current_column_number, then removes
     ///        covered rows and the column.
+    /// @param current_column_number Column index in the current reduced matrix.
+    /// @param val_to_assign Value to assign (ONE or ZERO).
+    /// @param isForcedEssential True when the assignment comes from an essential row.
     /// Pre:  0 <= current_column_number < current matrix column count.
     ///       val_to_assign is ONE or ZERO.
     /// Post: Column is erased from the matrix. Rows where that column == val_to_assign are removed.

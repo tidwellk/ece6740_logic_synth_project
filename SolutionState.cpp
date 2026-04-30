@@ -1,14 +1,14 @@
 #include "SolutionState.h"
 
-/// @brief default constructor
+/// @brief Constructs an empty solution state.
 SolutionState::SolutionState()
 	: is_valid_solution(true)
 {
 	// std::cout << "SolutionState: default constructor" << std::endl;
 }
 
-/// @brief This constructor reads a text file into the object.
-/// @param filename text file to read
+/// @brief Constructs a solution state by reading a covering problem from a file.
+/// @param filename Input covering problem file.
 SolutionState::SolutionState(std::string filename)
 	: is_valid_solution(true)
 {
@@ -27,7 +27,7 @@ SolutionState::SolutionState(std::string filename)
 	populate_solutions_array();
 }
 
-/// @brief destructor
+/// @brief Destroys the solution state.
 SolutionState::~SolutionState()
 { 
 	// std::cout << "SolutionState: destructor" << std::endl;
@@ -89,7 +89,6 @@ SolutionState &SolutionState::operator=(SolutionState &&other) noexcept
 		current_assignment = std::move(other.current_assignment);
 		is_valid_solution = other.is_valid_solution;
 	}
-	std::cout << "SolutionState: move assignment" << std::endl;
 	return *this;
 }
 
@@ -243,7 +242,7 @@ bool SolutionState::readInputFile_isOK(std::string filename)
 	return true;
 }
 
-/// @brief this function fills out the colnames vector with x1, x2, x3, etc
+/// @brief Populates column names and the current-to-original column index map.
 void SolutionState::populate_colnames_array()
 {
 	for (int i = 0; i < how_many_x_vars; i++)
@@ -257,9 +256,6 @@ void SolutionState::remove_essential_rows()
 {
 	while (find_essential_row() == true)
 	{
-		// std::cout << "found essential row" << std::endl;
-		// printSolution();
-		// printMatrix();
 	}
 }
 
@@ -273,8 +269,8 @@ bool SolutionState::operator!=(const SolutionState &other) const
 	return !(*this == other);
 }
 
-/// @brief print the matrix cover
-void SolutionState::printMatrix() // pass using the by reference operator &. this means we don't make a deep copy of the matrix just to print it
+/// @brief Prints the current matrix cover in tabular form.
+void SolutionState::printMatrix()
 {
 	if (matrix.empty())
 	{
@@ -349,15 +345,13 @@ void SolutionState::printSolution()
 	}
 }
 
+/// @brief Returns the current matrix representation.
 std::vector<std::vector<Val>> SolutionState::getMatrix()
 {
 	return matrix;
 }
 
-/// @brief this function mutates the state in place. it will apply these three things:
-///		finding essential rows
-///		delete dominating rows
-///		delete dominated columns
+/// @brief Applies all matrix reductions until the state no longer changes.
 void SolutionState::reduce()
 {
 	SolutionState a_prime;
@@ -383,8 +377,7 @@ void SolutionState::reduce()
 			 *this != a_prime);
 }
 
-/// @brief this function returns the solution cost. It is the number of ones in the forced solution
-/// @return
+/// @brief Returns the solution cost as the number of forced ONE assignments.
 int SolutionState::cost() const
 {
 	int result = 0;
@@ -400,33 +393,33 @@ int SolutionState::cost() const
 	return result;
 }
 
-/// @brief getter for the is_valid boolean
-/// @return
+/// @brief Returns whether the state is still logically consistent.
 bool SolutionState::is_valid()
 {
 	return is_valid_solution;
 }
 
+/// @brief Returns the current assignment vector.
 std::vector<Val> SolutionState::getSolution()
 {
 	return this->current_assignment;
 }
 
+/// @brief Returns the total number of variables in the original problem.
 int SolutionState::getHowManyXVars() const
 {
 	return how_many_x_vars;
 }
 
+/// @brief Returns true when no uncovered rows remain in the matrix.
 bool SolutionState::isEmpty()
 {
 	return matrix.size() == 0;
 }
 
-/// @brief this will return the best lower bound estimate.
-///			const means it is not allowed to mutate the solver state,
-///			but we can make a copy of the matrix and modify that instead.
-///
-/// @return -1 if we find an infeasible row, otherwise the lower bound cost of the current matrix (current + new lower bound)
+/// @brief Computes a greedy lower bound on the remaining solution cost.
+/// @return The current forced cost plus the greedy lower bound, or -1 if the
+///         remaining matrix contains an infeasible all-DC row.
 int SolutionState::lower_bound() const
 {
 	// Create a mutable copy of the matrix to work with.
@@ -435,21 +428,18 @@ int SolutionState::lower_bound() const
 	int matrix_cost = 0;
 	while(!matrix_copy.empty())
 	{
-		// Calculate the cost of implementing each row as part of the solution.
 		int min_row = -1;
 		int min_row_ones = -1;
-		for (int i = 0; i < (int)matrix_copy.size(); i++) // size is the number of rows
+		for (int i = 0; i < (int)matrix_copy.size(); i++)
 		{
 			int current_row_ones = 0;
 			for (Val column_entry : matrix_copy[i])
 			{
-				// Skip the row if it contains a 0 since it cannot be part of the solution.
 				if (column_entry == ZERO)
 				{
 					current_row_ones = -1;
 					break;
 				}
-				// Otherwise add its cost if it's implemented at the row.
 				else if (column_entry == ONE)
 				{
 					current_row_ones++;
@@ -462,31 +452,25 @@ int SolutionState::lower_bound() const
 			}
 		}
 
-		// If all remaining rows have zeros we can stop here.
 		if(min_row_ones == -1)
 		{
 			min_row_ones = 0;
 			break;
 		}
 
-		// Remember the columns of this row covers before erasing it.
 		std::vector<int> one_entries;
 		for (int j = 0; j < (int)matrix_copy[min_row].size(); j++)
 			if (matrix_copy[min_row][j] == ONE) one_entries.push_back(j);
 
-		// Now we've identified the row with the lowest cost to implement. First verify feasibility,
 		if(one_entries.empty())
 		{
-			return -1; // being empty means all entries were DC.
+			return -1;
 		}
 
-		// then add its cost,
 		matrix_cost += (bool) min_row_ones;
 
-		// Remove it from the mutable copy of the original matrix,
 		matrix_copy.erase(matrix_copy.begin() + min_row);
 
-		// Remove any row that has a 1 in the same column as the implemented row (start at the end and go backwards since we are removing rows to avoid skipping any).
 		for (int i = matrix_copy.size() - 1; i >= 0; i--) 
 		{
 			for (int entry : one_entries)
@@ -498,25 +482,18 @@ int SolutionState::lower_bound() const
 				}
 			}
 		}
-
-		// and repeat until the matrix is empty or we find an infeasible row.
 	}
 
-	// The current minimal cost is the cost of the currest solution plus the cost of our lower bound.
 	return this->cost() + matrix_cost;
 }
 
-/// @brief pairwise comparison of rows
-/// If row i dominates row j, this function removes row i.
-/// Checks every pair of rows and adds the dominating ones to a set.
-/// Then removes all the dominating rows at the end.
+/// @brief Removes rows dominated by other rows in the current matrix.
 void SolutionState::remove_dominating_rows()
 {
 	// this makes a set which iterates in descending order
 	std::set<int, std::greater<int>> rows_to_remove;
 
 	// need to compare row by row
-	// outer loop takes one row and inner loop changes which one the outer one is being compared to
 	for (uint outer = 0; outer < matrix.size(); outer++)
 	{
 		std::vector<Val> row_i = matrix[outer];
@@ -532,11 +509,8 @@ void SolutionState::remove_dominating_rows()
 
 			bool i_dominates_j = true;
 
-			// ok now we have two rows to compare, row_i and row_j
-			// need to compare them elementwise
 			for (uint elementwise = 0; elementwise < row_i.size(); elementwise++)
 			{
-				// we want to check if i dominates j and can be removed
 				Val row_i_el = row_i[elementwise];
 				Val row_j_el = row_j[elementwise];
 
@@ -556,7 +530,6 @@ void SolutionState::remove_dominating_rows()
 				}
 			}
 
-			// elementwise check is done.
 			if (i_dominates_j)
 			{
 				rows_to_remove.emplace(outer);
@@ -571,11 +544,9 @@ void SolutionState::remove_dominating_rows()
 	}
 }
 
-/// @brief pairwise checks of every column
+/// @brief Removes columns dominated by other columns in the current matrix.
 void SolutionState::remove_dominated_columns()
 {
-	// std::set<int, std::greater<int>> cols_to_remove;
-
 	if (matrix.empty() || matrix[0].empty())
 	{
 		return;
@@ -595,16 +566,6 @@ void SolutionState::remove_dominated_columns()
 
 			bool a_dominates_b = true;
 
-			// need to check every row from colA and colB
-			/*
-			the bad combinations are:
-
-			a=−, b=1
-			a=0, b=1
-			a=0, b=−
-
-			If any row has one of those, then a does not dominate b
-			*/
 			for (uint rowIdx = 0; rowIdx < rowCount; rowIdx++)
 			{
 				Val row_a_el = matrix[rowIdx][colA];
@@ -634,8 +595,6 @@ void SolutionState::remove_dominated_columns()
 
 			if (a_dominates_b)
 			{
-				// cols_to_remove.emplace(colB);
-				// reduce() loops over and over, so we can delete one column here and then return. reduce will run the loop again
 				assign_a_variable(colB, ZERO, NOT_ESSENTIAL);
 
 				return;
@@ -644,6 +603,7 @@ void SolutionState::remove_dominated_columns()
 	}
 }
 
+/// @brief Finds and processes one essential row, if one exists.
 bool SolutionState::find_essential_row()
 {
 	for (uint i = 0; i < matrix.size(); i++)
@@ -673,11 +633,9 @@ bool SolutionState::find_essential_row()
 	return false;
 }
 
-/// @brief this is called when find_essential_row has found one.
-///		   it needs to remove any row that has the same x value assigned
-///		   to it because it has been covered
-/// @param column_to_check
-/// @param value
+/// @brief Removes all rows covered by an assignment to a specific column value.
+/// @param column_to_check Column index in the current reduced matrix.
+/// @param value Assigned value that covers the row.
 void SolutionState::remove_rows_with_same_val(int column_to_check, Val value)
 {
 	for (int rownum = (int)matrix.size() - 1; rownum >= 0; rownum--)
@@ -690,18 +648,16 @@ void SolutionState::remove_rows_with_same_val(int column_to_check, Val value)
 	}
 }
 
+/// @brief Removes a row and its name entry from the current matrix state.
+/// @param rownum Row index to erase.
 void SolutionState::remove_row_number(int rownum)
 {
-	// remove the row from rownames
 	rownames.erase(rownames.begin() + rownum);
-
-	// remove the row from matrix
 	matrix.erase(matrix.begin() + rownum);
 }
 
-/// @brief this is called when a variable has been assigned, we need to remove the column from
-///        each row vector
-/// @param column_number
+/// @brief Removes a column from the matrix after that variable has been assigned.
+/// @param column_number Column index in the current reduced matrix.
 void SolutionState::remove_column(int column_number)
 {
 	for (auto &row : matrix)
@@ -714,41 +670,14 @@ void SolutionState::remove_column(int column_number)
 		current_column_to_colnames_idx.begin() + column_number);
 }
 
-
-
-/// 	You need two different operations
-/// 	1. Forced assignment (essential rows)
-/// 		update solution
-/// 		remove rows with matching value
-/// 		remove column
-/// 	2. Column dominance (not essential, just pruning)
-/// 		DO NOT commit to solution yet
-/// 		remove rows where column == 0
-/// 		remove the column
-///
-/// Returns false and marks the state invalid if a contradictory forced assignment is detected.
-/// @param current_column_number
-/// @param val_to_assign
-/// @param isForcedEssential
-/// @return false if we find a contradiction in the solution, true otherwise. it will mark the solution as invalid if we find a contradiction, so you can check that with is_valid() after calling this function. the contradiction can be either in the forced_solution or in the current_assignment depending on whether this is an essential row assignment or a column dominance assignment.
-/// @brief Assigns val_to_assign to the variable at current_column_number.
+/// @brief Assigns a value to a column, removes covered rows, and removes the column.
+/// @param current_column_number Column index in the current reduced matrix.
+/// @param val_to_assign Value to assign (ONE or ZERO).
+/// @param isForcedEssential True when the assignment comes from an essential row.
+/// @return False if the assignment contradicts an existing assignment; true otherwise.
 bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assign, bool isForcedEssential)
 {
 	int actual_var_column = current_column_to_colnames_idx[current_column_number];
-
-	// check for duplicates first
-	// solution.push_back(Assignment(assigned_var_column, assignedVal));
-	/*
-	A row ai of A is essential when there exists exactly one j such that aij is
-	not equal to ’-’.
-	This cooresponds to clause consisting of a single literal.
-	If the literal is xj (i.e., aij = 1), the variable is essential.
-	If the literal is xj' (i.e., aij = 0), the variable is unacceptable.
-	The matrix A is reduced with respect to the essential literal.
-	This variable is set to value of literal, column is removed, and any row
-	where variable has same value is removed.
-	*/
-	// turns out that we need to
 	if (isForcedEssential)
 	{
 		if (forced_solution[actual_var_column] == UNASSIGNED ||
@@ -785,18 +714,15 @@ bool SolutionState::assign_a_variable(int current_column_number, Val val_to_assi
 	return true;
 }
 
-/// @brief Chooses the branching variable by scoring columns based on short-row coverage,
-/// binate occurrence, polarity balance, and total appearances in the current matrix.
-/// @return column number of the variable to assign, or -1 if the matrix is empty (no variable to choose).
+/// @brief Chooses the branching variable using the repository's heuristic score.
+/// @return Reduced-matrix column index of the chosen variable, or -1 if the matrix is empty.
 int SolutionState::choose_var()
 {
-	// If the matrix is empty, return -1 to indicate no variable to choose since 0 would be a valid column index.
 	if (matrix.empty() || matrix[0].empty())
 	{
 		return -1;
 	}
 
-	// Scoring variables based on the selection heuristic to choose the best branching variable.
 	int best_col = 0;
 	int best_score = -1;
 	int best_short_row_score = -1;
@@ -804,23 +730,19 @@ int SolutionState::choose_var()
 	int best_balance_bonus = -1;
 	int best_total_appearances = -1;
 
-	// Iterate through each column to calculate its score based on the defined heuristic.
 	for (int col = 0; col < (int)matrix[0].size(); col++)
 	{
 		int short_row_score = 0;
 		int pos_count = 0;
 		int neg_count = 0;
 
-		// Evaluate the column by iterating through each row and counting the occurrences of 1s, 0s, and DCs.
 		for (const auto &row : matrix)
 		{
-			// Skip DC entries since they do not contribute to the score and do not affect dominance or essentiality.
 			if (row[col] == DC)
 			{
 				continue;
 			}
 
-			// Count the number of literals in the row (non-DC entries) to determine if it's a short row.
 			int row_literals = 0;
 			for (Val entry : row)
 			{
@@ -830,10 +752,6 @@ int SolutionState::choose_var()
 				}
 			}
 
-			// Short rows are more valuable to cover, so we give them a higher score. 
-			// This encourages the algorithm to cover short rows early, which can lead to faster reductions in the matrix size.
-			// The scoring is exponential for very short rows to prioritize them even more, while longer rows get a smaller incremental score.
-			// The scoring criteria here is purely heuristic and can be adjusted based on testing and performance observations.
 			if (row_literals <= 2)
 			{
 				short_row_score += 100;
@@ -851,7 +769,6 @@ int SolutionState::choose_var()
 				short_row_score += 1;
 			}
 
-			// Count the number of positive and negative occurrences of the variable in the column.
 			if (row[col] == ONE)
 			{
 				pos_count++;
@@ -862,15 +779,11 @@ int SolutionState::choose_var()
 			}
 		}
 
-		// Calculate the total score for the column based on the short row score, binate bonus, balance bonus, and total appearances.
 		int total_appearances = pos_count + neg_count;
 		int binate_bonus = (pos_count > 0 && neg_count > 0) ? 50 : 0;
 		int balance_bonus = std::min(pos_count, neg_count) * 5;
 		int score = short_row_score + binate_bonus + balance_bonus + total_appearances;
 
-		// Update the best column if the current column has a higher score than the best score found so far.
-		// The tie-breaking criteria prioritize columns that cover more short rows, have a binate occurrence, 
-		// and have a better balance of positive and negative literals in that order, followed by total appearances as a final tiebreaker.
 		if (score > best_score ||
 			(score == best_score && short_row_score > best_short_row_score) ||
 			(score == best_score && short_row_score == best_short_row_score && binate_bonus > best_binate_bonus) ||

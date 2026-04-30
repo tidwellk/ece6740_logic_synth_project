@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# Run ABC combinational equivalence checking (CEC) on two BLIF files.
+#
+# Usage:
+#   ./scripts/abc_cec.sh spec.blif impl.blif
+#
+# Notes:
+#   - Update ABC_BIN below to match the local ABC installation.
+#   - ABC expects compatible primary input/output interfaces.
 
 set -euo pipefail
 
@@ -6,7 +14,7 @@ ABC_BIN="/Users/shem/Documents/CAD/abc/abc"
 
 if [[ $# -ne 2 ]]; then
     echo "Usage:"
-    echo "  ./scripts/abc_cec_checked.sh spec.blif impl.blif"
+    echo "  ./scripts/abc_cec.sh spec.blif impl.blif"
     exit 1
 fi
 

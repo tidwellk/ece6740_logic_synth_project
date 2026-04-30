@@ -27,13 +27,17 @@
 # This script also supports an optional reference BLIF file so that the
 # rebuilt BLIF can preserve the original .inputs and .outputs interface.
 # This is useful for ABC CEC, which expects matching primary inputs.
+#
+# Usage:
+#   python3 working_format_to_blif.py input.txt output.blif
+#   python3 working_format_to_blif.py input.txt output.blif reference.blif
 
 import sys
 import os
 
 
 """
-    Return the variable name without negation mark.
+Return the variable name without negation mark.
 
     Examples:
       "a"  -> "a"
@@ -147,9 +151,7 @@ def collect_primary_inputs(factors):
     return sorted(primary_inputs)
 
 
-"""
-    Build a BLIF writer object that accumulates .names blocks.
-"""
+"""Build and accumulate BLIF .names blocks for the reconstructed network."""
 class BlifBuilder:
     def __init__(self, model_name, primary_inputs, output_name):
         self.model_name = model_name

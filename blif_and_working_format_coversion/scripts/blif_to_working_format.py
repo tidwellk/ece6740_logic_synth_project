@@ -15,6 +15,10 @@
 #
 # This preserves products and sums instead of expanding everything
 # into a flat sum-of-products form.
+#
+# Usage:
+#   python3 blif_to_working_format.py input.blif
+#   python3 blif_to_working_format.py input.blif output.txt
 
 import sys
 from collections import defaultdict
@@ -121,16 +125,12 @@ def parse_blif(blif_path):
     return primary_inputs, primary_outputs, local_expression_form
 
 
-"""
-    Return the variable name without negation mark.
-"""
+"""Return the variable name without a trailing negation mark."""
 def literal_base_name(literal):
     return literal[:-1] if literal.endswith("'") else literal
 
 
-"""
-    Create a literal expression node.
-"""
+"""Create a literal expression node."""
 def make_literal(literal):
     return ("lit", literal)
 
@@ -191,9 +191,7 @@ def make_product(factors):
     return ("prod", flattened_factors)
 
 
-"""
-    Build a stable key for deduplication.
-"""
+"""Build a stable structural key for deduplication."""
 def expr_to_key(expression):
     kind = expression[0]
 
@@ -453,17 +451,11 @@ def negate_expression(expression):
     raise ValueError(f"Unknown expression kind: {kind}")
 
 
-"""
-    Command-line entry point.
-
-    Usage:
-      python blif_to_factored_lines.py input.blif
-      python blif_to_factored_lines.py input.blif output.txt
-"""
+"""Command-line entry point."""
 def main():
 
     if len(sys.argv) not in (2, 3):
-        print("Usage: python blif_to_factored_lines.py input.blif [output.txt]")
+        print("Usage: python3 blif_to_working_format.py input.blif [output.txt]")
         sys.exit(1)
 
     blif_path = sys.argv[1]

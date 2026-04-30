@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+# Simplify a BLIF network with ABC and write the resulting BLIF file.
+#
+# Usage:
+#   ./scripts/abc_simplify.sh input.blif
+#   ./scripts/abc_simplify.sh input.blif output.blif
+#
+# Notes:
+#   - Update ABC_BIN below to match the local ABC installation.
+#   - When no output path is provided, the script writes
+#     ./<input_stem>_simplified.blif in the current directory.
+
 set -euo pipefail
 
 ABC_BIN="/Users/shem/Documents/CAD/abc/abc"

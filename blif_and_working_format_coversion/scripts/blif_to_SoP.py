@@ -15,6 +15,10 @@
 #
 # Then the script recursively expands internal nodes so the final output
 # is written only in terms of primary inputs.
+#
+# Usage:
+#   python3 blif_to_SoP.py input.blif
+#   python3 blif_to_SoP.py input.blif output.txt
 
 import sys
 from collections import defaultdict
@@ -120,14 +124,12 @@ def parse_blif(blif_path):
 
     return primary_inputs, primary_outputs, SoP_form
 
-"""
-    Return the variable name without negation mark.
-"""
+"""Return the variable name without a trailing negation mark."""
 def literal_base_name(lit):
     return lit[:-1] if lit.endswith("'") else lit
 
 """
-    Merge two product terms into one larger product term.
+Merge two product terms into one larger product term.
 
     Example:
       ["a", "c"] merged with ["b'"] -> ["a", "b'", "c"]
@@ -247,13 +249,7 @@ def expand_signal(signal, SoP_form, primary_inputs, memo):
     memo[signal] = unique_expansion
     return unique_expansion
 
-"""
-    Command-line entry point.
-
-    Usage:
-      python3 blif_to_SoP.py input.blif
-      python3 blif_to_SoP.py input.blif output.txt
-"""
+"""Command-line entry point."""
 def main():
     
     if len(sys.argv) not in (2, 3):
